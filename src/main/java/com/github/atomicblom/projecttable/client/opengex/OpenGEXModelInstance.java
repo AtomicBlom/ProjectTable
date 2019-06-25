@@ -59,7 +59,8 @@ public class OpenGEXModelInstance implements IBakedModel
             return new ArrayList<>();
         }
 
-        if (quads == null || (blockState != null && blockState.getValue(BlockStateProperties.RENDER_DYNAMIC)))
+
+        if (quads == null || (blockState != null && blockState.getProperties().containsKey(BlockStateProperties.RENDER_DYNAMIC) && blockState.getValue(BlockStateProperties.RENDER_DYNAMIC)))
         {
             float animationTime = 0;
             if (state instanceof OpenGEXState)

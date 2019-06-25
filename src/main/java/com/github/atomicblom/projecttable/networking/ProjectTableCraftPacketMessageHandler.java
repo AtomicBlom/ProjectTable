@@ -35,13 +35,13 @@ public class ProjectTableCraftPacketMessageHandler implements IMessageHandler<Pr
                 final ImmutableList<ItemStack> itemStacks = ingredient.getItemStacks();
                 for (final ItemStack itemStack : itemStacks)
                 {
+                    if (quantityToConsume <= 0) {
+                        break;
+                    }
                     int metadata = itemStack.getMetadata();
                     metadata = metadata == OreDictionary.WILDCARD_VALUE ? -1 : metadata;
                     quantityToConsume -= playerInventory.clearMatchingItems(itemStack.getItem(), metadata, quantityToConsume, itemStack.getTagCompound());
                     playerInventory.markDirty();
-                    if (quantityToConsume <= 0) {
-                        break;
-                    }
                 }
             }
 

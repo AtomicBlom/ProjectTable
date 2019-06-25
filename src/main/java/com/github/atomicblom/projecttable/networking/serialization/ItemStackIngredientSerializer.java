@@ -5,7 +5,6 @@ import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
-import com.github.atomicblom.projecttable.networking.PacketBufferExtensions;
 import net.minecraft.network.PacketBuffer;
 
 import java.io.IOException;
@@ -20,7 +19,12 @@ public class ItemStackIngredientSerializer implements IIngredientSerializer
     {
         try
         {
-            return new ItemStackIngredient(PacketBufferExtensions.readLargeItemStackFromBuffer(buffer));
+            ItemStackIngredient itemStackIngredient = new ItemStackIngredient(buffer.readItemStack());
+            int consumedSize = buffer.readInt();
+            if (consumedSize != itemStackIngredient.getQuantityConsumed()) {
+                itemStackIngredient.overrideAmountConsumed(consumedSize);
+            }
+            return itemStackIngredient;
         } catch (IOException e)
         {
             throw new ProjectTableException(e);
@@ -32,6 +36,7 @@ public class ItemStackIngredientSerializer implements IIngredientSerializer
     {
         if (!(ingredient instanceof ItemStackIngredient)) throw new ProjectTableException("Attempt to deserialize an ingredient that is not an ItemStackIngredient");
         final ItemStackIngredient itemStackIngredient = (ItemStackIngredient) ingredient;
-        PacketBufferExtensions.writeLargeItemStackToBuffer(buffer, itemStackIngredient.getItemStack());
+        buffer.writeItemStack(itemStackIngredient.getItemStack());
+        buffer.writeInt(itemStackIngredient.getQuantityConsumed());
     }
 }

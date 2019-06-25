@@ -53,22 +53,24 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
         GlStateManager.enableRescaleNormal();
         final ImmutableList<ItemStack> output = recipe.getOutput();
         final ItemStack outputItemStack = output.get(0);
-        if (output.size() == 1 && outputItemStack.getItem() != null)
+        if (output.size() == 1 && !outputItemStack.isEmpty())
         {
             RenderHelper.enableGUIStandardItemLighting();
             guiRenderer.renderItem(this, outputItemStack, 2, 3);
             RenderHelper.disableStandardItemLighting();
 
-            if (outputItemStack.getCount() > 1)
-            {
-                final String craftedItemCount = String.format("%d", outputItemStack.getCount());
-                final int textWidth = guiRenderer.getStringWidth(craftedItemCount);
+            int itemCount = outputItemStack.getCount();
 
-                GlStateManager.depthFunc(GL11.GL_ALWAYS);
+            final String craftedItemCount = String.format("%d", itemCount);
+            final int textWidth = guiRenderer.getStringWidth(craftedItemCount);
+
+            GlStateManager.depthFunc(GL11.GL_ALWAYS);
+            if (itemCount > 0) {
                 guiRenderer.drawStringWithShadow(this, craftedItemCount, 16 - textWidth + 2, 12, 16777215);
-                GlStateManager.depthFunc(GL11.GL_LEQUAL);
-
             }
+            GlStateManager.depthFunc(GL11.GL_LEQUAL);
+
+
             guiRenderer.drawStringWithShadow(this, recipe.getDisplayName(), 2 + 20, 8, 16777215);
         }
 
@@ -91,9 +93,11 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
 
             guiRenderer.renderItem(this, possibleItems.get(renderedItem), getBounds().getWidth() - border - (itemSize + padding) * (j + border), padding + border);
 
-            GlStateManager.depthFunc(GL11.GL_ALWAYS);
-            guiRenderer.drawStringWithShadow(this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border , 12, 16777215);
-            GlStateManager.depthFunc(GL11.GL_LEQUAL);
+            if (inputIngredient.getQuantityConsumed() > 0) {
+                GlStateManager.depthFunc(GL11.GL_ALWAYS);
+                guiRenderer.drawStringWithShadow(this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
+                GlStateManager.depthFunc(GL11.GL_LEQUAL);
+            }
         }
 
         GlStateManager.disableRescaleNormal();

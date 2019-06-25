@@ -7,8 +7,6 @@ import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.OreDictionaryIngredient;
 import com.github.atomicblom.projecttable.networking.serialization.ItemStackIngredientSerializer;
 import com.github.atomicblom.projecttable.networking.serialization.OreDictionaryIngredientSerializer;
-import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -22,7 +20,7 @@ public class ModCrafting
                 .registerInventorySerializer(OreDictionaryIngredient.class, new OreDictionaryIngredientSerializer())
                 .registerInventorySerializer(ItemStackIngredient.class, new ItemStackIngredientSerializer())
 
-                .addProjectTableRecipe()
+                /*.addProjectTableRecipe()
                     .withIngredient(Blocks.DIRT, 64 * 3)
                     .crafts(Items.DIAMOND, 10)
 
@@ -46,6 +44,7 @@ public class ModCrafting
                     .andIngredient(Blocks.EMERALD_BLOCK, 2 * 49)
                     .andIngredient(Items.ELYTRA, 64)
                     .andIngredient(Items.CLAY_BALL, 1)
-                    .crafts(Items.CLAY_BALL);
+                    .crafts(Items.CLAY_BALL)*/
+                ;
     }
 }

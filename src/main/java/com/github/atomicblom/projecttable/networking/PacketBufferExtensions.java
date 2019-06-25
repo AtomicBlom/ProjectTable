@@ -1,11 +1,11 @@
 package com.github.atomicblom.projecttable.networking;
 
-import com.sun.istack.internal.NotNull;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.PacketBuffer;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 
@@ -18,7 +18,7 @@ public class PacketBufferExtensions
      * An alternative to PacketBuffer.writeItemStackToBuffer, this version allows large stack sizes.
      * Writes the ItemStack's ID (short), then size (int), then damage. (short)
      */
-    public static PacketBuffer writeLargeItemStackToBuffer(PacketBuffer packetBuffer, @NotNull ItemStack stack)
+    public static PacketBuffer writeLargeItemStackToBuffer(PacketBuffer packetBuffer, @Nonnull ItemStack stack)
     {
         packetBuffer.writeShort(Item.getIdFromItem(stack.getItem()));
         packetBuffer.writeInt(stack.getCount());

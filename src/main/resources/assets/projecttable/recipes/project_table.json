@@ -1,0 +1,32 @@
+{
+  "result": {
+    "item": "projecttable:project_table",
+    "count": 1
+  },
+  "pattern": [
+    "pgi",
+    "scs",
+    "l l"
+  ],
+  "type": "forge:ore_shaped",
+  "key": {
+    "p": {
+      "item": "#PAPER"
+    },
+    "g": {
+      "item": "#PANE_OF_GLASS"
+    },
+    "i": {
+      "item": "#INGOT_OF_IRON"
+    },
+    "s": {
+      "item": "#SLAB_OF_WOOD"
+    },
+    "c": {
+      "item": "#WORKBENCH"
+    },
+    "l": {
+      "item": "#WOODEN_LOG"
+    }
+  }
+}

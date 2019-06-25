@@ -20,9 +20,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.item.ItemStack;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * An implementation of IIngredient that allows ItemStack instances to be submitted as ingredients.
  *
@@ -34,6 +31,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class ItemStackIngredient implements IIngredient
 {
     private final ItemStack itemStack;
+    private Integer overridenAmount = null;
 
     /**
      * Class constructor specifying an ItemStack. The quantity consumed is deduced from the stackSize of the ItemStack.
@@ -43,8 +41,6 @@ public class ItemStackIngredient implements IIngredient
      */
     public ItemStackIngredient(ItemStack itemStack)
     {
-        checkArgument(checkNotNull(itemStack).getCount() > 0);
-        checkNotNull(itemStack.getItem());
         this.itemStack = itemStack.copy();
     }
 
@@ -67,7 +63,7 @@ public class ItemStackIngredient implements IIngredient
     @Override
     public int getQuantityConsumed()
     {
-        return itemStack.getCount();
+        return overridenAmount != null ? overridenAmount : itemStack.getCount();
     }
 
     @Override
@@ -82,5 +78,9 @@ public class ItemStackIngredient implements IIngredient
     public ItemStack getItemStack()
     {
         return itemStack.copy();
+    }
+
+    public void overrideAmountConsumed(int count) {
+        overridenAmount = count;
     }
 }

@@ -22,10 +22,11 @@ import com.github.atomicblom.projecttable.api.ICraftingManagerIngredientsOrLabel
 import com.github.atomicblom.projecttable.api.IProjectTableManager;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
+import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
+import com.github.atomicblom.projecttable.api.ingredient.OreDictionaryIngredient;
 import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.networking.SerializationRegistry;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
@@ -56,27 +57,39 @@ public enum CraftingManager implements ICraftingManager
     }
 
     public void addFromNBT(NBTTagCompound nbtValue) {
+        if (!nbtValue.hasKey("id", Constants.NBT.TAG_STRING)) {
+            throw new ProjectTableException("NBT did not contain an 'id' tag: " + nbtValue.toString());
+        }
+
         if (!nbtValue.hasKey("ingredients", Constants.NBT.TAG_LIST)) {
-            throw new ProjectTableException("NBT did not contain an 'ingredients' tag");
+            throw new ProjectTableException("NBT did not contain an 'ingredients' tag: " + nbtValue.toString());
         }
 
         ProjectTableRecipeContext context = new ProjectTableRecipeContext(this, projectTableManager);
-        if (!nbtValue.hasKey("label", Constants.NBT.TAG_STRING)) {
+        if (nbtValue.hasKey("label", Constants.NBT.TAG_STRING)) {
             context.withLabel(nbtValue.getString("label"));
         }
 
-        NBTTagList ingredients = nbtValue.getTagList("ingredients", Constants.NBT.TAG_COMPOUND);
-        for (NBTBase ingredientBase : ingredients) {
-            NBTTagCompound ingredient = (NBTTagCompound)ingredientBase;
-            if (ingredient.hasKey("id", Constants.NBT.TAG_STRING)) {
-                context.withIngredient(new ItemStack(ingredient));
-            } else {
-                throw new ProjectTableException("Unexpected ingredient tag type");
+        IIngredient[] ingredientList;
+        if (nbtValue.hasKey("ingredients", Constants.NBT.TAG_LIST)) {
+            NBTTagList ingredients = nbtValue.getTagList("ingredients", Constants.NBT.TAG_COMPOUND);
+            ingredientList = new IIngredient[ingredients.tagCount()];
+            for (int i = 0; i < ingredients.tagCount(); i++) {
+                NBTTagCompound ingredient = (NBTTagCompound)ingredients.get(i);
+                ingredientList[i] = getIngredientFromNBT(ingredient);
             }
+        } else if (nbtValue.hasKey("ingredients", Constants.NBT.TAG_COMPOUND)) {
+            NBTTagCompound ingredient = nbtValue.getCompoundTag("ingredients");
+            ingredientList = new IIngredient[1];
+            ingredientList[0] = getIngredientFromNBT(ingredient);
+        } else {
+            throw new ProjectTableException("NBT had a malformed 'ingredients' tag: " + nbtValue.toString());
         }
 
-        if (nbtValue.hasKey("crafts", Constants.NBT.TAG_COMPOUND)) {
+        context.withIngredients(ingredientList);
 
+
+        if (nbtValue.hasKey("crafts", Constants.NBT.TAG_COMPOUND)) {
             NBTTagCompound crafts = nbtValue.getCompoundTag("crafts");
             context.crafts(new ItemStack(crafts));
         } else if (nbtValue.hasKey("crafts", Constants.NBT.TAG_LIST)) {
@@ -86,6 +99,30 @@ public enum CraftingManager implements ICraftingManager
                 outputs[item] = new ItemStack(crafts.getCompoundTagAt(item));
             }
             context.crafts(outputs);
+        } else {
+            throw new ProjectTableException("NBT had a malformed 'crafts' tag: " + nbtValue.toString());
+        }
+    }
+
+    private IIngredient getIngredientFromNBT(NBTTagCompound ingredient) {
+        if (ingredient.hasKey("id", Constants.NBT.TAG_STRING)) {
+            int count = ingredient.getInteger("Count");
+            ingredient.setInteger("Count", 1);
+            ItemStackIngredient itemStackIngredient = new ItemStackIngredient(new ItemStack(ingredient));
+            if (ingredient.hasKey("Count")) {
+                itemStackIngredient.overrideAmountConsumed(count);
+            }
+
+            return itemStackIngredient;
+        } else if (ingredient.hasKey("oredict", Constants.NBT.TAG_STRING)) {
+            int count = ingredient.getInteger("Count");
+            if (count <= 0) count = 1;
+            return new OreDictionaryIngredient(
+                    ingredient.getString("oredict"),
+                    count
+            );
+        } else {
+            throw new ProjectTableException("Unexpected ingredient tag type: " + ingredient.toString());
         }
     }
 }
