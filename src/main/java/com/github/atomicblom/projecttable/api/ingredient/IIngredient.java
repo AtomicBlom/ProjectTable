@@ -43,4 +43,16 @@ public interface IIngredient
      * @return The quantity of this ingredient to be consumed on a successful use.
      */
     int getQuantityConsumed();
+
+    /**
+     * Crafting with this IIngredient will reduce the durability of the itemstack by this amount
+     * @param durabilityCost the durability to remove from the item
+     */
+    void setDurabilityCost(int durabilityCost);
+
+    /**
+     * Sets the ingredient to consume the fluid and return it's container
+     * @param fluidContainer if true, the container will be returned
+     */
+    void setFluidContainer(boolean fluidContainer);
 }

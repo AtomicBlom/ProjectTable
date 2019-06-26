@@ -92,7 +92,6 @@ public enum CraftingManager implements ICraftingManager
 
         context.withIngredients(ingredientList);
 
-
         if (nbtValue.hasKey("crafts", Constants.NBT.TAG_COMPOUND)) {
             NBTTagCompound crafts = nbtValue.getCompoundTag("crafts");
             context.crafts(new ItemStack(crafts));
@@ -112,24 +111,38 @@ public enum CraftingManager implements ICraftingManager
     }
 
     private IIngredient getIngredientFromNBT(NBTTagCompound ingredient) {
+        int count = ingredient.getInteger("Count");
+        if (count < 0) count = 0;
+        if (ingredient.getBoolean("tool")) count = 0;
+
+        IIngredient result;
+
         if (ingredient.hasKey("id", Constants.NBT.TAG_STRING)) {
-            int count = ingredient.getInteger("Count");
+            // Item stacks can't have a count > 64 or it gets defaulted to 0 and becomes empty.
             ingredient.setInteger("Count", 1);
             ItemStackIngredient itemStackIngredient = new ItemStackIngredient(new ItemStack(ingredient));
             if (ingredient.hasKey("Count")) {
                 itemStackIngredient.overrideAmountConsumed(count);
             }
-
-            return itemStackIngredient;
+            result = itemStackIngredient;
         } else if (ingredient.hasKey("oredict", Constants.NBT.TAG_STRING)) {
-            int count = ingredient.getInteger("Count");
-            if (count <= 0) count = 1;
-            return new OreDictionaryIngredient(
+            // Ore Dictionary ingredients aren't based on itemstacks and aren't subject to the 64 item limit.
+            result = new OreDictionaryIngredient(
                     ingredient.getString("oredict"),
                     count
             );
         } else {
             throw new ProjectTableException("Unexpected ingredient tag type: " + ingredient.toString());
         }
+
+        if (ingredient.hasKey("durabilityCost")) {
+            result.setDurabilityCost(ingredient.getInteger("durabilityCost"));
+        }
+
+        if (ingredient.hasKey("fluidContainer")) {
+            result.setFluidContainer(ingredient.getBoolean("fluidContainer"));
+        }
+
+        return result;
     }
 }
