@@ -86,6 +86,10 @@ public enum CraftingManager implements ICraftingManager
             throw new ProjectTableException("NBT had a malformed 'ingredients' tag: " + nbtValue.toString());
         }
 
+        if (ingredientList.length == 0) {
+            throw new ProjectTableException("NBT was missing ingredients: " + nbtValue.toString());
+        }
+
         context.withIngredients(ingredientList);
 
 
@@ -97,6 +101,9 @@ public enum CraftingManager implements ICraftingManager
             ItemStack[] outputs = new ItemStack[crafts.tagCount()];
             for (int item = 0; item < crafts.tagCount(); item++) {
                 outputs[item] = new ItemStack(crafts.getCompoundTagAt(item));
+            }
+            if (outputs.length == 0) {
+                throw new ProjectTableException("NBT was missing craft outputs: " + nbtValue.toString());
             }
             context.crafts(outputs);
         } else {
