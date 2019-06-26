@@ -22,6 +22,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 @Mod(modid = ProjectTableMod.MODID, name = ProjectTableMod.NAME, version = ProjectTableMod.VERSION)
 public class ProjectTableMod
@@ -82,28 +85,44 @@ public class ProjectTableMod
         try {
             if (new File(configDir, "projectTable.nbt").canRead()) {
                 NBTTagCompound nbtTagCompound = CompressedStreamTools.read(new File(configDir, "projectTable.nbt"));
-                for (NBTBase recipeNbt : nbtTagCompound.getTagList("recipeNbt", Constants.NBT.TAG_COMPOUND)) {
-                    FMLInterModComms.sendMessage(MODID, "ProjectTableRecipe", (NBTTagCompound) recipeNbt);
-                }
-            }
-            File projectTable = new File(configDir, "projectTable");
-            if (projectTable.isDirectory()) {
-                for (File file : projectTable.listFiles(file -> file.getName().endsWith(".json"))) {
-                    String contents = new String(Files.readAllBytes(file.toPath()));
-                    NBTTagCompound tag = JsonToNBT.getTagFromJson(contents);
-                    if (!tag.hasKey("id", Constants.NBT.TAG_STRING)) {
-                        tag.setString("id", "config:" + file.getName().replace(".json", ""));
-                    }
 
-                    FMLInterModComms.sendMessage(MODID, "ProjectTableRecipe", tag);
+                NBTTagList recipeList = nbtTagCompound.getTagList("recipe", Constants.NBT.TAG_COMPOUND);
+                for (int i = 0; i < recipeList.tagCount(); i++) {
+                    NBTTagCompound recipeNbt = recipeList.getCompoundTagAt(i);
+                    String source = "config:projectTable.nbt[" + i + "]";
+                    if (!recipeNbt.hasKey("id", Constants.NBT.TAG_STRING)) {
+                        recipeNbt.setString("id", source);
+                    }
+                    recipeNbt.setString("source", source);
+                    FMLInterModComms.sendMessage(MODID, "ProjectTableRecipe", recipeNbt);
                 }
             }
         } catch (FileNotFoundException e) {
-            com.github.atomicblom.projecttable.Logger.warning("projectTable.nbt not found: " + e.toString());
+            logger.warn("projectTable.nbt not found: " + e.toString());
         } catch (IOException e) {
-            com.github.atomicblom.projecttable.Logger.warning("Error reading projectTable.nbt: " + e.toString());
+            logger.warn("Error reading projectTable.nbt: " + e.toString());
+        }
+        try {
+            Path projectTable = Paths.get(configDir, "projectTable");
+            if (Files.isDirectory(projectTable)) {
+                Stream<Path> files = Files.walk(projectTable)
+                        .filter(file -> Files.isRegularFile(file) && file.getFileName().endsWith(".json"));
+
+                for (Path file : (Iterable<Path>)files::iterator) {
+                    String contents = new String(Files.readAllBytes(file));
+                    NBTTagCompound tag = JsonToNBT.getTagFromJson(contents);
+                    String source = "config:" + projectTable.relativize(file).toString().replace(".json", "");
+                    if (!tag.hasKey("id", Constants.NBT.TAG_STRING)) {
+                        tag.setString("id", source);
+                    }
+                    tag.setString("source", source);
+                    FMLInterModComms.sendMessage(MODID, "ProjectTableRecipe", tag);
+                }
+            }
         } catch (NBTException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            logger.warn("Error reading projectTable.nbt: " + e.toString());
         }
     }
 
@@ -113,7 +132,11 @@ public class ProjectTableMod
         for (FMLInterModComms.IMCMessage message : event.getMessages()) {
             if ("ProjectTableRecipe".equalsIgnoreCase(message.key) && message.isNBTMessage()) {
                 try {
-                    CraftingManager.INSTANCE.addFromNBT(message.getNBTValue());
+                    NBTTagCompound nbt = message.getNBTValue();
+                    if (!nbt.hasKey("source")) {
+                        nbt.setString("source", "imc:" + message.getSender());
+                    }
+                    CraftingManager.INSTANCE.addFromNBT(nbt);
                 } catch (ProjectTableException e) {
                     logger.error("Unable to parse recipe", e);
                 }
