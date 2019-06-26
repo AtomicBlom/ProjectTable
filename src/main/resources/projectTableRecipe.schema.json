@@ -50,8 +50,22 @@
         },
         {
           "properties": {
-            "craftDamage": {
-              "type": "number"
+            "durabilityCost": {
+              "$id": "#/ingredient/durabilityCost",
+              "type": "number",
+              "title": "Crafting will use up this amount of durability on the item, you will almost certainly want tool to be true",
+              "minimum": 0,
+              "default": 0
+            },
+            "tool": {
+              "type": "boolean",
+              "title": "The item will not be consumed in the crafting. If durabilityCost causes the item to reach 0 it may be destroyed",
+              "default": false
+            },
+            "fluidContainer": {
+              "type": "boolean",
+              "title": "[NOT IMPLEMENTED] The fluid contents will be consumed and it's container returned",
+              "default": false
             }
           }
         }
@@ -127,11 +141,13 @@
         "tag": {
           "$id": "#/itemStackIngredient/tag",
           "type": "object",
+          "title": "the NBT tag for the item",
           "additionalProperties": true
         },
         "ForgeCaps": {
           "$id": "#/itemStackIngredient/ForgeCaps",
           "type": "object",
+          "title": "Forge capabilities",
           "additionalProperties": true
         }
       }
