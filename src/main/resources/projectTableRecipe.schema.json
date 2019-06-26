@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "title": "The Root Schema",
+  "required": [
+    "crafts",
+    "ingredients"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^([a-z0-9_]+)$"
+    },
+    "crafts": {
+      "$id": "#/properties/crafts",
+      "oneOf": [
+        {
+          "type": "array",
+          "title": "A list of crafting outputs",
+          "items": { "$ref": "#/definitions/itemStackIngredient" }
+        },
+        { "$ref": "#/definitions/itemStackIngredient" }
+      ]
+    },
+    "ingredients": {
+      "oneOf": [
+        {
+          "type": "array",
+          "title": "A list of ingredients",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/ingredient" }
+            ]
+          }
+        },
+        { "$ref": "#/definitions/ingredient" }
+      ]
+    }
+  },
+  "definitions": {
+    "ingredient": {
+      "$id": "#/ingredient",
+      "allOf": [
+        {
+          "oneOf": [
+            { "$ref": "#/definitions/itemStackIngredient" },
+            { "$ref": "#/definitions/oreDictionaryIngredient" }
+          ]
+        },
+        {
+          "properties": {
+            "craftDamage": {
+              "type": "number"
+            }
+          }
+        }
+      ]
+    },
+    "oreDictionaryIngredient": {
+      "$id": "#/oreDictionaryIngredient",
+      "title": "An instance of an Ore Dictionary type",
+      "type": "object",
+      "required": [
+        "oredict"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "oredict": {
+          "$id": "#/oreDictionaryIngredient/oredict",
+          "type": "string",
+          "title": "A valid Minecraft identifier"
+        },
+        "Count": {
+          "$id": "#/oreDictionaryIngredient/Count",
+          "type": "integer",
+          "title": "The number of items to produce",
+          "default": 1,
+          "minimum": 0,
+          "examples": [
+            6
+          ]
+        }
+      }
+    },
+    "itemStackIngredient": {
+      "$id": "#/itemStackIngredient",
+      "title": "An instance of an ItemStack",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "id": {
+          "$id": "#/itemStackIngredient/id",
+          "type": "string",
+          "title": "A valid Minecraft identifier",
+          "examples": [
+            "minecraft:wooden_slab"
+          ],
+          "pattern": "^([a-z0-9_]+):([a-z0-9_]+)$"
+        },
+        "Count": {
+          "$id": "#/itemStackIngredient/Count",
+          "type": "integer",
+          "title": "The number of items to produce",
+          "default": 1,
+          "minimum": 0,
+          "examples": [
+            6
+          ]
+        },
+        "Damage": {
+          "$id": "#/itemStackIngredient/Damage",
+          "type": "integer",
+          "title": "The item meta or damage",
+          "default": 0,
+          "minimum": 0,
+          "examples": [
+            4
+          ]
+        },
+        "tag": {
+          "$id": "#/itemStackIngredient/tag",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "ForgeCaps": {
+          "$id": "#/itemStackIngredient/ForgeCaps",
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}
