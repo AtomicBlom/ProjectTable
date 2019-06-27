@@ -35,6 +35,9 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
 
     public ScrollPaneControl<TModel, TChildComponentTemplate> setItemRendererTemplate(TChildComponentTemplate guiComponentTemplate) {
         template = guiComponentTemplate;
+        if (scrollbar != null) {
+            scrollbar.setScrollSize(template.getBounds().getHeight() / 2);
+        }
         return this;
     }
 
@@ -61,6 +64,9 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
         this.scrollbar = scrollbar;
         if (scrollbar != null) {
             this.scrollbar.addOnCurrentValueChangedEventListener(scrollbarListener);
+            if (template != null) {
+                scrollbar.setScrollSize(template.getBounds().getHeight() / 2);
+            }
         }
         return this;
     }

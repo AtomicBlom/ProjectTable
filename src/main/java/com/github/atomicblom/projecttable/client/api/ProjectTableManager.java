@@ -11,6 +11,7 @@ import net.minecraftforge.registries.RegistryManager;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Created by codew on 25/01/2016.
@@ -44,17 +45,26 @@ public enum ProjectTableManager
             boolean itemMatched = false;
             int itemsAvailable = 0;
             final List<ItemStack> itemStacks = ItemStackUtils.getAllSubtypes(recipeIngredient.getItemStacks());
+            int durabilityRequired = recipeIngredient.getDurabilityCost();
             for (final ItemStack recipeInput : itemStacks)
             {
                 for (final ItemStack playerItem : compactedInventoryItems) {
-                    if (recipeInput.getItem() == playerItem.getItem() && recipeInput.getMetadata() == playerItem.getMetadata() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
-                        itemMatched = true;
-                        itemsAvailable += playerItem.getCount();
+                    if (durabilityRequired > 0) { //Item is damageable, ignore metadata, take into account durability
+                        if (recipeInput.getItem() == playerItem.getItem() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
+                            durabilityRequired -= (recipeInput.getMaxDamage() - recipeInput.getItemDamage());
+                            itemMatched = true;
+                            itemsAvailable += playerItem.getCount();
+                        }
+                    } else {
+                        if (recipeInput.getItem() == playerItem.getItem() && recipeInput.getMetadata() == playerItem.getMetadata() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
+                            itemMatched = true;
+                            itemsAvailable += playerItem.getCount();
+                        }
                     }
                 }
             }
 
-            if (itemsAvailable < recipeIngredient.getQuantityConsumed() || !itemMatched) {
+            if (durabilityRequired > 0 || itemsAvailable < recipeIngredient.getQuantityConsumed() || !itemMatched) {
                 return false;
             }
         }
@@ -64,7 +74,9 @@ public enum ProjectTableManager
 
     private List<ItemStack> getCompactedInventoryItems(InventoryPlayer inventorySlots) {
         List<ItemStack> usableItems = Lists.newArrayList();
-        for (final ItemStack itemStack : inventorySlots.mainInventory)
+
+        Stream<ItemStack> stream = Stream.concat(inventorySlots.mainInventory.stream(), Stream.of(inventorySlots.getItemStack()));
+        for (final ItemStack itemStack : (Iterable<ItemStack>)stream::iterator)
         {
             if (itemStack == null || itemStack.isEmpty())
             {

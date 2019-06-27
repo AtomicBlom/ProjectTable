@@ -23,6 +23,7 @@ public class ScrollbarControl extends ControlBase
 
     private GuiTexture currentTexture;
     private boolean enabled;
+    private int scrollSize;
 
     public ScrollbarControl(GuiRenderer guiRenderer, GuiTexture activeHandle, GuiTexture inactiveHandle)
     {
@@ -118,14 +119,14 @@ public class ScrollbarControl extends ControlBase
     @Override
     public boolean mouseWheelDown(ReadablePoint point, int scrollAmount)
     {
-        setCurrentValue(getCurrentValue() + 5);
+        setCurrentValue(getCurrentValue() + scrollSize);
         return true;
     }
 
     @Override
     public boolean mouseWheelUp(ReadablePoint point, int scrollAmount)
     {
-        setCurrentValue(getCurrentValue() + -5);
+        setCurrentValue(getCurrentValue() + -scrollSize);
         return true;
     }
 
@@ -209,5 +210,13 @@ public class ScrollbarControl extends ControlBase
     private int getHandleTop() {
         final double percentageLocation = (currentValue - minimumValue) / (double)(maximumValue - minimumValue);
         return (int) (percentageLocation * usableScrollHeight);
+    }
+
+    public void setScrollSize(int scrollSize) {
+        this.scrollSize = scrollSize;
+    }
+
+    public int getScrollSize() {
+        return scrollSize;
     }
 }

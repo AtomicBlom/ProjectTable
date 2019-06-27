@@ -17,7 +17,10 @@ public class OreDictionaryIngredientSerializer implements IIngredientSerializer
     {
         final String oreDictionaryName = ByteBufUtils.readUTF8String(buffer);
         final int quantity = buffer.readInt();
-        return new OreDictionaryIngredient(oreDictionaryName, quantity);
+        OreDictionaryIngredient oreDictionaryIngredient = new OreDictionaryIngredient(oreDictionaryName, quantity);
+        oreDictionaryIngredient.setDurabilityCost(buffer.readInt());
+        oreDictionaryIngredient.setFluidContainer(buffer.readBoolean());
+        return oreDictionaryIngredient;
     }
 
     @Override
@@ -27,6 +30,8 @@ public class OreDictionaryIngredientSerializer implements IIngredientSerializer
         final OreDictionaryIngredient oreDictionaryIngredient = (OreDictionaryIngredient) ingredient;
 
         buffer.writeString(oreDictionaryIngredient.getName())
-                .writeInt(oreDictionaryIngredient.getQuantityConsumed());
+                .writeInt(oreDictionaryIngredient.getQuantityConsumed())
+                .writeInt(oreDictionaryIngredient.getDurabilityCost())
+                .writeBoolean(oreDictionaryIngredient.isFluidContainer());
     }
 }

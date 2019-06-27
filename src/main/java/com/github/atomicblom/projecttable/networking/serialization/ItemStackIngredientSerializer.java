@@ -24,6 +24,8 @@ public class ItemStackIngredientSerializer implements IIngredientSerializer
             if (consumedSize != itemStackIngredient.getQuantityConsumed()) {
                 itemStackIngredient.overrideAmountConsumed(consumedSize);
             }
+            itemStackIngredient.setDurabilityCost(buffer.readInt());
+            itemStackIngredient.setFluidContainer(buffer.readBoolean());
             return itemStackIngredient;
         } catch (IOException e)
         {
@@ -36,7 +38,9 @@ public class ItemStackIngredientSerializer implements IIngredientSerializer
     {
         if (!(ingredient instanceof ItemStackIngredient)) throw new ProjectTableException("Attempt to deserialize an ingredient that is not an ItemStackIngredient");
         final ItemStackIngredient itemStackIngredient = (ItemStackIngredient) ingredient;
-        buffer.writeItemStack(itemStackIngredient.getItemStack());
-        buffer.writeInt(itemStackIngredient.getQuantityConsumed());
+        buffer.writeItemStack(itemStackIngredient.getItemStack())
+                .writeInt(itemStackIngredient.getQuantityConsumed())
+                .writeInt(itemStackIngredient.getDurabilityCost())
+                .writeBoolean(itemStackIngredient.isFluidContainer());
     }
 }

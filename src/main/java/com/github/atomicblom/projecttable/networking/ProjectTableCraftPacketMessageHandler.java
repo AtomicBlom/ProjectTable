@@ -12,7 +12,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.IThreadListener;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -54,7 +53,7 @@ public class ProjectTableCraftPacketMessageHandler implements IMessageHandler<Pr
                     }
 
                     if (durabilityToConsume > 0) {
-                        durabilityToConsume -= clearMatchingDurability(playerInventory, itemStack.getItem(), metadata, durabilityToConsume, itemStack.getTagCompound());
+                        durabilityToConsume -= clearMatchingDurability(playerInventory, itemStack.getItem(), durabilityToConsume, itemStack.getTagCompound());
                         playerInventory.markDirty();
                     }
 
@@ -83,63 +82,45 @@ public class ProjectTableCraftPacketMessageHandler implements IMessageHandler<Pr
         return null; // no response in this case
     }
 
-    public int clearMatchingDurability(InventoryPlayer playerInventory, @Nullable Item itemIn, int metadataIn, int removeCount, @Nullable NBTTagCompound itemNBT)
+    public int clearMatchingDurability(InventoryPlayer playerInventory, @Nullable Item itemIn, int durability, @Nullable NBTTagCompound itemNBT)
     {
-        int i = 0;
+        if (durability <= 0) return 0;
+
+        int durabilityConsumed = 0;
 
         for (int j = 0; j < playerInventory.getSizeInventory(); ++j)
         {
             ItemStack itemstack = playerInventory.getStackInSlot(j);
 
-            if (!itemstack.isEmpty() && (itemIn == null || itemstack.getItem() == itemIn) && (metadataIn <= -1 || itemstack.getMetadata() == metadataIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, itemstack.getTagCompound(), true)))
+            if (!itemstack.isEmpty() && (itemIn == null || itemstack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, itemstack.getTagCompound(), true)))
             {
-                int k = removeCount <= 0 ? itemstack.getItemDamage() : Math.min(removeCount - i, itemstack.getItemDamage());
-                i += k;
+                int thisItemDurabilityToRemove = Math.min(durability - durabilityConsumed, itemstack.getMaxDamage() - itemstack.getItemDamage());
+                durabilityConsumed += thisItemDurabilityToRemove;
 
-                if (removeCount != 0)
+                itemstack.damageItem(thisItemDurabilityToRemove, playerInventory.player);
+
+                if (durabilityConsumed >= durability)
                 {
-                    itemstack.damageItem(k, playerInventory.player);
-
-                    if (removeCount > 0 && i >= removeCount)
-                    {
-                        return i;
-                    }
+                    return durability - durabilityConsumed;
                 }
             }
         }
 
         ItemStack mouseHeldItemStack = playerInventory.getItemStack();
-        if (!mouseHeldItemStack.isEmpty())
+        if (!mouseHeldItemStack.isEmpty() && (itemIn == null || mouseHeldItemStack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, mouseHeldItemStack.getTagCompound(), true)))
         {
-            if (itemIn != null && mouseHeldItemStack.getItem() != itemIn)
-            {
-                return i;
+            int heldItemDurabilityToRemove = Math.min(durability - durabilityConsumed, mouseHeldItemStack.getMaxDamage() - mouseHeldItemStack.getItemDamage());
+            durabilityConsumed += heldItemDurabilityToRemove;
+
+            mouseHeldItemStack.damageItem(heldItemDurabilityToRemove, playerInventory.player);
+            playerInventory.setItemStack(mouseHeldItemStack);
+
+            if (durabilityConsumed >= durability) {
+                return durability - durabilityConsumed;
             }
 
-            if (metadataIn > -1 && mouseHeldItemStack.getMetadata() != metadataIn)
-            {
-                return i;
-            }
-
-            if (itemNBT != null && !NBTUtil.areNBTEquals(itemNBT, mouseHeldItemStack.getTagCompound(), true))
-            {
-                return i;
-            }
-
-            int l = removeCount <= 0 ? mouseHeldItemStack.getCount() : Math.min(removeCount - i, mouseHeldItemStack.getCount());
-            i += l;
-
-            if (removeCount != 0)
-            {
-                mouseHeldItemStack.damageItem(l, playerInventory.player);
-
-                if (removeCount > 0 && i >= removeCount)
-                {
-                    return i;
-                }
-            }
         }
 
-        return i;
+        return durability - durabilityConsumed;
     }
 }
