@@ -50,9 +50,13 @@ public interface IIngredient
      */
     void setDurabilityCost(int durabilityCost);
 
+    int getDurabilityCost();
+
     /**
      * Sets the ingredient to consume the fluid and return it's container
      * @param fluidContainer if true, the container will be returned
      */
     void setFluidContainer(boolean fluidContainer);
+
+    boolean isFluidContainer();
 }
