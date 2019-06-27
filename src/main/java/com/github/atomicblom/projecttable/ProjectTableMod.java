@@ -106,7 +106,7 @@ public class ProjectTableMod
             Path projectTable = Paths.get(configDir, "projectTable");
             if (Files.isDirectory(projectTable)) {
                 Stream<Path> files = Files.walk(projectTable)
-                        .filter(file -> Files.isRegularFile(file) && file.getFileName().endsWith(".json"));
+                        .filter(file -> Files.isRegularFile(file) && file.toString().endsWith(".json"));
 
                 for (Path file : (Iterable<Path>)files::iterator) {
                     String contents = new String(Files.readAllBytes(file));

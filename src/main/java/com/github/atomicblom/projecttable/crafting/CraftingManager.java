@@ -19,7 +19,6 @@ package com.github.atomicblom.projecttable.crafting;
 import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.ICraftingManager;
 import com.github.atomicblom.projecttable.api.ICraftingManagerIngredientsOrLabel;
-import com.github.atomicblom.projecttable.api.IProjectTableManager;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
@@ -42,7 +41,7 @@ public enum CraftingManager implements ICraftingManager
 {
     INSTANCE;
 
-    public final IProjectTableManager projectTableManager = ProjectTableManager.INSTANCE;
+    public final ProjectTableManager projectTableManager = ProjectTableManager.INSTANCE;
     public final SerializationRegistry serializationRegistry = SerializationRegistry.INSTANCE;
 
     @Override
@@ -52,8 +51,10 @@ public enum CraftingManager implements ICraftingManager
     }
 
     @Override
-    public ICraftingManagerIngredientsOrLabel addProjectTableRecipe() {
-        return new ProjectTableRecipeContext(this, projectTableManager);
+    public ICraftingManagerIngredientsOrLabel addProjectTableRecipe(String modId, String recipeId) {
+        return new ProjectTableRecipeContext(this, projectTableManager)
+                .setId("recipeId")
+                .setSource("mod:" + modId);
     }
 
     public void addFromNBT(NBTTagCompound nbtValue) {
@@ -65,7 +66,10 @@ public enum CraftingManager implements ICraftingManager
             throw new ProjectTableException("NBT did not contain an 'ingredients' tag: " + nbtValue.toString());
         }
 
-        ProjectTableRecipeContext context = new ProjectTableRecipeContext(this, projectTableManager);
+        ProjectTableRecipeContext context = new ProjectTableRecipeContext(this, projectTableManager)
+                .setId(nbtValue.getString("id"))
+                .setSource(nbtValue.getString("source"));
+
         if (nbtValue.hasKey("label", Constants.NBT.TAG_STRING)) {
             context.withLabel(nbtValue.getString("label"));
         }

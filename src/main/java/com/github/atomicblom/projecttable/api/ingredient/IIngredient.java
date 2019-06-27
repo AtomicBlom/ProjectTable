@@ -59,4 +59,6 @@ public interface IIngredient
     void setFluidContainer(boolean fluidContainer);
 
     boolean isFluidContainer();
+
+    void assertValid(String id, String source);
 }

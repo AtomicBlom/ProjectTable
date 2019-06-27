@@ -1,11 +1,13 @@
 package com.github.atomicblom.projecttable.client.api;
 
-import com.github.atomicblom.projecttable.api.IProjectTableManager;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
+import com.github.atomicblom.projecttable.api.ingredient.InvalidIngredientException;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
 import com.google.common.collect.Lists;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.registries.RegistryManager;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,16 +15,24 @@ import java.util.List;
 /**
  * Created by codew on 25/01/2016.
  */
-public enum ProjectTableManager implements IProjectTableManager
+public enum ProjectTableManager
 {
     INSTANCE;
 
     private List<ProjectTableRecipe> recipes = Lists.newArrayList();
 
-    @Override
-    public void addProjectTableRecipe(Collection<ItemStack> output, String displayName, Collection<IIngredient> ingredients)
-    {
-        recipes.add(new ProjectTableRecipe(output, displayName, ingredients));
+    public void addProjectTableRecipe(ProjectTableRecipe recipe) {
+        for (ItemStack itemStack : recipe.output) {
+            if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(itemStack.getItem()) || itemStack.isEmpty()) {
+                throw new InvalidIngredientException(recipe.getId(), recipe.getSource(), "Invalid ItemStack: " + itemStack.toString());
+            }
+        }
+
+        for (IIngredient ingredient : recipe.input) {
+            ingredient.assertValid(recipe.getId(), recipe.getSource());
+        }
+
+        recipes.add(recipe);
     }
 
     public boolean canCraftRecipe(ProjectTableRecipe recipe, InventoryPlayer playerInventory)
@@ -56,7 +66,7 @@ public enum ProjectTableManager implements IProjectTableManager
         List<ItemStack> usableItems = Lists.newArrayList();
         for (final ItemStack itemStack : inventorySlots.mainInventory)
         {
-            if (itemStack == null || itemStack.getItem() == null)
+            if (itemStack == null || itemStack.isEmpty())
             {
                 continue;
             }

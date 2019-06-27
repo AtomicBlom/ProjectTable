@@ -4,6 +4,8 @@ import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.*;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
+import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
+import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
 import com.google.common.collect.Lists;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
@@ -22,11 +24,13 @@ import java.util.stream.Collectors;
 class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, ICraftingManagerIngredientsOrLabel
 {
     private final CraftingManager parent;
-    private final IProjectTableManager projectTableManager;
+    private final ProjectTableManager projectTableManager;
     private String label = null;
     private final List<IIngredient> ingredients = Lists.newArrayList();
+    private String id = "unidentified";
+    private String source = "fluent:no source specified";
 
-    ProjectTableRecipeContext(CraftingManager parent, IProjectTableManager projectTableManager)
+    ProjectTableRecipeContext(CraftingManager parent, ProjectTableManager projectTableManager)
     {
 
         this.parent = parent;
@@ -199,12 +203,22 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
             }
         }
 
-        projectTableManager.addProjectTableRecipe(outputList, label, ingredients);
+        projectTableManager.addProjectTableRecipe(new ProjectTableRecipe(id, source, outputList, label, ingredients));
         return parent;
     }
 
     private static List<IIngredient> wrapItemStacks(Collection<ItemStack> input)
     {
         return input.stream().map(ItemStackIngredient::new).collect(Collectors.toList());
+    }
+
+    public ProjectTableRecipeContext setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public ProjectTableRecipeContext setSource(String source) {
+        this.source = source;
+        return this;
     }
 }

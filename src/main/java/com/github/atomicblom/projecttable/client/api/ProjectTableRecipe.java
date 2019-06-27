@@ -21,26 +21,30 @@ import java.util.List;
  */
 public class ProjectTableRecipe
 {
-    private ImmutableList<ItemStack> output;
-    private ImmutableList<IIngredient> input;
+    ImmutableList<ItemStack> output;
+    private final String source;
+    ImmutableList<IIngredient> input;
     private String displayName;
     private String renderText;
+    private String id;
 
-    public ProjectTableRecipe(Collection<ItemStack> output, String displayName, Collection<IIngredient> input)
+    public ProjectTableRecipe(String id, String source, Collection<ItemStack> output, String displayName, Collection<IIngredient> input)
     {
+        this.id = id;
+        this.source = source;
         this.input = ImmutableList.copyOf(input);
         this.displayName = displayName;
         this.output = ImmutableList.copyOf(output);
     }
 
-    public ProjectTableRecipe(ItemStack output, Collection<IIngredient> input)
+    public ProjectTableRecipe(String id, String source, ItemStack output, Collection<IIngredient> input)
     {
-        this(Lists.newArrayList(output), output.getDisplayName(), input);
+        this(id, source, Lists.newArrayList(output), output.getDisplayName(), input);
     }
 
-    public ProjectTableRecipe(ItemStack output, IIngredient... input)
+    public ProjectTableRecipe(String id, String source, ItemStack output, IIngredient... input)
     {
-        this(Lists.newArrayList(output), output.getDisplayName(), Arrays.asList(input));
+        this(id, source, Lists.newArrayList(output), output.getDisplayName(), Arrays.asList(input));
     }
 
 
@@ -83,6 +87,9 @@ public class ProjectTableRecipe
     {
         try
         {
+            String id = buf.readString(255);
+            String source = buf.readString(255);
+
             byte inputItemStackCount = buf.readByte();
             List<IIngredient> input = Lists.newArrayList();
             for (int i = 0; i < inputItemStackCount; ++i)
@@ -99,7 +106,7 @@ public class ProjectTableRecipe
 
             final String displayName = ByteBufUtils.readUTF8String(buf);
 
-            return new ProjectTableRecipe(output, displayName, input);
+            return new ProjectTableRecipe(id, source, output, displayName, input);
         } catch (IOException e)
         {
             throw new ProjectTableException("Unable to deserialize ProjectTableRecipe", e);
@@ -117,6 +124,9 @@ public class ProjectTableRecipe
 
     public void writeToBuffer(PacketBuffer buf)
     {
+        buf.writeString(id);
+        buf.writeString(source);
+
         buf.writeByte(input.size());
         for (final IIngredient itemStack : input)
         {
@@ -139,5 +149,13 @@ public class ProjectTableRecipe
             throw new ProjectTableException("Unknown Ingredient serializer: " + serializer);
         }
         serializer.serialize(ingredient, buf);
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getSource() {
+        return source;
     }
 }

@@ -18,7 +18,9 @@ package com.github.atomicblom.projecttable.api.ingredient;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.registries.RegistryManager;
 
 /**
  * An implementation of IIngredient that allows ItemStack instances to be submitted as ingredients.
@@ -31,7 +33,9 @@ import net.minecraft.item.ItemStack;
 public class ItemStackIngredient implements IIngredient
 {
     private final ItemStack itemStack;
-    private Integer overridenAmount = null;
+    private Integer overriddenAmount = null;
+    private int durabilityCost = 0;
+    private boolean fluidContainer = false;
 
     /**
      * Class constructor specifying an ItemStack. The quantity consumed is deduced from the stackSize of the ItemStack.
@@ -63,7 +67,36 @@ public class ItemStackIngredient implements IIngredient
     @Override
     public int getQuantityConsumed()
     {
-        return overridenAmount != null ? overridenAmount : itemStack.getCount();
+        return overriddenAmount != null ? overriddenAmount : itemStack.getCount();
+    }
+
+    @Override
+    public void setDurabilityCost(int durabilityCost) {
+
+        this.durabilityCost = durabilityCost;
+    }
+
+    @Override
+    public int getDurabilityCost() {
+        return this.durabilityCost;
+    }
+
+    @Override
+    public void setFluidContainer(boolean fluidContainer) {
+
+        this.fluidContainer = fluidContainer;
+    }
+
+    @Override
+    public boolean isFluidContainer() {
+        return this.fluidContainer;
+    }
+
+    @Override
+    public void assertValid(String id, String source) throws InvalidIngredientException {
+        if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(this.itemStack.getItem()) || this.itemStack.isEmpty()) {
+            throw new InvalidIngredientException(id, source, "Invalid ItemStack: " + this.itemStack.toString());
+        }
     }
 
     @Override
@@ -81,6 +114,6 @@ public class ItemStackIngredient implements IIngredient
     }
 
     public void overrideAmountConsumed(int count) {
-        overridenAmount = count;
+        overriddenAmount = count;
     }
 }

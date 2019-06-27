@@ -36,6 +36,8 @@ public class OreDictionaryIngredient implements IIngredient
 {
     private final String name;
     private final int quantityConsumed;
+    private int durabilityCost = 0;
+    private boolean fluidContainer = false;
 
     /**
      * Class constructor specifying an ore name. A quantity consumed of 1 is assumed.
@@ -80,6 +82,35 @@ public class OreDictionaryIngredient implements IIngredient
     public int getQuantityConsumed()
     {
         return quantityConsumed;
+    }
+
+    @Override
+    public void setDurabilityCost(int durabilityCost) {
+
+        this.durabilityCost = durabilityCost;
+    }
+
+    @Override
+    public int getDurabilityCost() {
+        return this.durabilityCost;
+    }
+
+    @Override
+    public void setFluidContainer(boolean fluidContainer) {
+
+        this.fluidContainer = fluidContainer;
+    }
+
+    @Override
+    public boolean isFluidContainer() {
+        return this.fluidContainer;
+    }
+
+    @Override
+    public void assertValid(String id, String source) {
+        if (!OreDictionary.doesOreNameExist(this.name)) {
+            throw new InvalidIngredientException(id, source, "Invalid OreDictionary name: " + this.name);
+        }
     }
 
     @Override

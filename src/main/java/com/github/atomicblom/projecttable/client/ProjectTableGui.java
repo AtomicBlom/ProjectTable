@@ -96,7 +96,7 @@ public class ProjectTableGui extends McGUI
     {
         guiRenderer = new GuiRenderer(mc, mc.getTextureManager(), fontRenderer, itemRender);
 
-        final GuiSubTexture guiBackground = new GuiSubTexture(guiTexture, new Rectangle(0, 0, 317, 227));
+        final GuiTexture guiBackground = new GuiSubTexture(guiTexture, new Rectangle(0, 0, 317, 227));
         final GuiTexture inactiveHandle = new GuiSubTexture(guiTexture, new Rectangle(318, 0, 12, 15));
         final GuiTexture activeHandle = new GuiSubTexture(guiTexture, new Rectangle(318 + 12, 0, 12, 15));
         final GuiTexture craftableSubtexture = new GuiSubTexture(guiTexture, new Rectangle(0, 227, 284, 23));
@@ -203,7 +203,7 @@ public class ProjectTableGui extends McGUI
         List<ItemStack> usableItems = Lists.newArrayList();
         for (final ItemStack itemStack : inventorySlots.getInventory())
         {
-            if (itemStack == null || itemStack.getItem() == null)
+            if (itemStack == null || itemStack.isEmpty())
             {
                 continue;
             }

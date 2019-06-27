@@ -18,9 +18,9 @@ package com.github.atomicblom.projecttable.client.mcgui.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.Container;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.translation.I18n;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.util.Point;
 import org.lwjgl.util.ReadablePoint;
@@ -175,9 +175,9 @@ public abstract class McGUI extends GuiContainer
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseZ)
     {
-        final String name = I18n.translateToLocal(getInventoryName());
+        final String name = I18n.format(getInventoryName());
 
         fontRenderer.drawString(name, xSize / 2 - fontRenderer.getStringWidth(name) / 2, 6, TEXT_COLOR);
-        fontRenderer.drawString(I18n.translateToLocal(INVENTORY), 8, ySize - 96 + 2, TEXT_COLOR);
+        fontRenderer.drawString(I18n.format(INVENTORY), 8, ySize - 96 + 2, TEXT_COLOR);
     }
 }

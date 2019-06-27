@@ -9,5 +9,5 @@ import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 public interface ICraftingManager
 {
     ICraftingManager registerInventorySerializer(Class<? extends IIngredient> inventoryClass, IIngredientSerializer serializer);
-    ICraftingManagerIngredientsOrLabel addProjectTableRecipe();
+    ICraftingManagerIngredientsOrLabel addProjectTableRecipe(String modId, String recipeId);
 }
