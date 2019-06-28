@@ -1,6 +1,6 @@
 package com.github.atomicblom.projecttable.gui.events;
 
-import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
+import com.github.atomicblom.projecttable.crafting.ProjectTableRecipe;
 
 /**
  * Created by codew on 16/01/2016.

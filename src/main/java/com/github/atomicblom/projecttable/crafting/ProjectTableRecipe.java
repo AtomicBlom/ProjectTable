@@ -1,4 +1,4 @@
-package com.github.atomicblom.projecttable.client.api;
+package com.github.atomicblom.projecttable.crafting;
 
 import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;

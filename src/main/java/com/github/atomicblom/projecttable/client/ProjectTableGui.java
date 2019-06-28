@@ -1,8 +1,8 @@
 package com.github.atomicblom.projecttable.client;
 
 import com.github.atomicblom.projecttable.ProjectTableMod;
-import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
-import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
+import com.github.atomicblom.projecttable.crafting.ProjectTableManager;
+import com.github.atomicblom.projecttable.crafting.ProjectTableRecipe;
 import com.github.atomicblom.projecttable.client.controls.ProjectTableRecipeControl;
 import com.github.atomicblom.projecttable.client.mcgui.client.gui.GuiRenderer;
 import com.github.atomicblom.projecttable.client.mcgui.client.gui.GuiSubTexture;

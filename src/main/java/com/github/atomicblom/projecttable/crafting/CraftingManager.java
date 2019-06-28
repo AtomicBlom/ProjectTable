@@ -23,7 +23,6 @@ import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.OreDictionaryIngredient;
-import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.networking.SerializationRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -53,7 +52,7 @@ public enum CraftingManager implements ICraftingManager
     @Override
     public ICraftingManagerIngredientsOrLabel addProjectTableRecipe(String modId, String recipeId) {
         return new ProjectTableRecipeContext(this, projectTableManager)
-                .setId("recipeId")
+                .setId(recipeId)
                 .setSource("mod:" + modId);
     }
 

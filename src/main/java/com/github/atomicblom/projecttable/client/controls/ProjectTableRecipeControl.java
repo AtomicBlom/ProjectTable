@@ -2,7 +2,7 @@ package com.github.atomicblom.projecttable.client.controls;
 
 import com.github.atomicblom.projecttable.Logger;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
-import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
+import com.github.atomicblom.projecttable.crafting.ProjectTableRecipe;
 import com.github.atomicblom.projecttable.client.mcgui.client.gui.GuiRenderer;
 import com.github.atomicblom.projecttable.client.mcgui.client.gui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.client.gui.IGuiTemplate;

@@ -1,11 +1,12 @@
 package com.github.atomicblom.projecttable.crafting;
 
 import com.github.atomicblom.projecttable.ProjectTableException;
-import com.github.atomicblom.projecttable.api.*;
+import com.github.atomicblom.projecttable.api.ICraftingManager;
+import com.github.atomicblom.projecttable.api.ICraftingManagerIngredientOrResult;
+import com.github.atomicblom.projecttable.api.ICraftingManagerIngredients;
+import com.github.atomicblom.projecttable.api.ICraftingManagerIngredientsOrLabel;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
-import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
-import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
 import com.google.common.collect.Lists;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
