@@ -83,3 +83,14 @@ processResources {
 jar { 
     classifier = 'universal' 
 }
+
+repositories {
+    maven { url "http://maven.blamejared.com/" }
+    maven { url "https://maven.mcmoddev.com" }
+}
+
+dependencies {
+    deobfCompile "codersafterdark.reskillable:Reskillable:${config.minecraft_version}-${config.reskillable_version}"
+    deobfCompile "net.darkhax.gamestages:GameStages-${config.minecraft_version}:${config.gamestages_version}"
+    deobfCompile "CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-${config.crafttweaker_version}"
+}

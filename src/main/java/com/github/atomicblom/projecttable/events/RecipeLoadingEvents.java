@@ -1,4 +1,4 @@
-package com.github.atomicblom.projecttable.registration;
+package com.github.atomicblom.projecttable.events;
 
 
 import com.github.atomicblom.projecttable.ProjectTableMod;
@@ -26,7 +26,7 @@ import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 @Mod.EventBusSubscriber
-public class ModCrafting
+public class RecipeLoadingEvents
 {
     @SubscribeEvent
     public static void onProjectTableInitialized(ProjectTableInitializedEvent event) {
