@@ -72,7 +72,7 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
     }
 
     public ScrollPaneControl<TModel, TChildComponentTemplate> setItems(List<TModel> items) {
-        this.items = items == null ? new ArrayList<TModel>(0) : items;
+        this.items = items == null ? new ArrayList<>(0) : items;
         final int maximumValue = Math.max(0, (this.items.size() - visibleItemCount) * template.getBounds().getHeight());
         scrollbar.setMaximumValue(maximumValue);
         return this;

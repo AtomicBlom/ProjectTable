@@ -19,13 +19,13 @@ import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.util.Rectangle;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProjectTableGui extends McGUI
 {
@@ -36,14 +36,17 @@ public class ProjectTableGui extends McGUI
     private final InventoryPlayer playerInventory;
     private int timesInventoryChanged;
     private GuiTextField searchField = null;
-    private Collection<ProjectTableRecipeInstance> recipeList = null;
-    private List<ProjectTableRecipeInstance> filteredList = null;
+    private Collection<ProjectTableRecipeInstance> recipeList;
+    private final List<ProjectTableRecipeInstance> filteredList;
     private ScrollPaneControl recipeListGuiComponent = null;
     private ScrollbarControl scrollbarGuiComponent = null;
     private GuiRenderer guiRenderer;
+    private boolean showOnlyCraftable = false;
 
     public ProjectTableGui(InventoryPlayer playerInventory) {
         super(new ProjectTableContainer(playerInventory));
+        recipeList = Lists.newArrayList();
+        filteredList = Lists.newArrayList();
         this.playerInventory = playerInventory;
         this.timesInventoryChanged = playerInventory.getTimesChanged();
     }
@@ -71,14 +74,10 @@ public class ProjectTableGui extends McGUI
         super.initGui();
         xSize = 317;
         ySize = 227;
-        recipeList = Lists.newArrayList();
 
-        //Temporary Item List:
-        for (final ProjectTableRecipe projectTableRecipe : ProjectTableManager.INSTANCE.getRecipes())
-        {
-            recipeList.add(new ProjectTableRecipeInstance(projectTableRecipe));
-        }
-        filteredList = Lists.newArrayList(recipeList);
+
+
+        createRecipeList();
 
         searchField = new GuiTextField(0, fontRenderer, guiLeft + 9 - (317 - 175) / 2, guiTop + 9, 149, fontRenderer.FONT_HEIGHT);
         searchField.setMaxStringLength(60);
@@ -90,6 +89,52 @@ public class ProjectTableGui extends McGUI
         createComponents();
 
         setRecipeRenderText();
+    }
+
+    private void createRecipeList() {
+
+        Collection<ProjectTableRecipe> recipes = Lists.newArrayList(ProjectTableManager.INSTANCE.getRecipes());
+        //Copy the Player inventory to guard against changes.
+        InventoryPlayer inventoryCopy = new InventoryPlayer(playerInventory.player);
+        inventoryCopy.copyInventory(playerInventory);
+        //Temporary Item List:
+
+        this.recipeList = recipes.parallelStream().map((recipe) -> {
+                    ProjectTableRecipeInstance recipeInstance = new ProjectTableRecipeInstance(recipe);
+
+                    final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipe, inventoryCopy);
+
+                    recipeInstance.setCanCraft(canCraft);
+                    //FIXME: Implement this when we support GameStages or something similar.
+                    recipeInstance.setIsLocked(false);
+
+                    return recipeInstance;
+                })
+                .sorted((a, b) -> a.getRecipe().getDisplayName().compareToIgnoreCase(b.getRecipe().getDisplayName()))
+                .sequential()
+                .collect(Collectors.toList());
+
+        createFilteredList();
+    }
+
+    private void createFilteredList()
+    {
+
+        String text = searchField != null ? searchField.getText() : "";
+        filteredList.clear();
+
+        final String searchText = text.toLowerCase();
+
+        synchronized (filteredList) {
+            this.recipeList.parallelStream().filter(f ->
+                    (!showOnlyCraftable || f.canCraft()) &&
+                            !f.isLocked() &&
+                            (searchText.isEmpty() || f.getRecipe().getDisplayName().toLowerCase().contains(searchText))
+            )
+            .sorted((a, b) -> a.getRecipe().getDisplayName().compareToIgnoreCase(b.getRecipe().getDisplayName()))
+            .sequential()
+            .collect(Collectors.toCollection(() -> filteredList));
+        }
     }
 
     protected void createComponents()
@@ -124,6 +169,16 @@ public class ProjectTableGui extends McGUI
     }
 
     @Override
+    public void updateScreen() {
+        super.updateScreen();
+
+        if (playerInventory.getTimesChanged() != timesInventoryChanged) {
+            timesInventoryChanged = playerInventory.getTimesChanged();
+            createRecipeList();
+        }
+    }
+
+    @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseZ)
     {
 
@@ -151,14 +206,14 @@ public class ProjectTableGui extends McGUI
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-        if (playerInventory.getTimesChanged() != timesInventoryChanged) {
+        /*if (playerInventory.getTimesChanged() != timesInventoryChanged) {
             for (final ProjectTableRecipeInstance recipeInstance : filteredList)
             {
                 final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipeInstance.getRecipe(), playerInventory);
                 recipeInstance.setCanCraft(canCraft);
             }
-        }
-        playerInventory.markDirty();
+        }*/
+        //playerInventory.markDirty();
 
         super.drawGuiContainerBackgroundLayer(partialTicks, mouseX, mouseY);
         searchField.drawTextBox();
@@ -171,7 +226,7 @@ public class ProjectTableGui extends McGUI
         {
             if (searchField.textboxKeyTyped(typedChar, keyCode))
             {
-                updateSearch();
+                createFilteredList();
             }
             else
             {
@@ -180,26 +235,9 @@ public class ProjectTableGui extends McGUI
         }
     }
 
-    private void updateSearch()
-    {
-        String text = searchField.getText();
-        filteredList.clear();
-        if (text == null || text.isEmpty()) {
-            filteredList.addAll(recipeList);
-            return;
-        }
-        text = text.toLowerCase();
-        for (final ProjectTableRecipeInstance projectTableRecipe : recipeList)
-        {
-            if (projectTableRecipe.getRecipe().getDisplayName().toLowerCase().contains(text)) {
-                filteredList.add(projectTableRecipe);
-            }
-        }
-    }
+    //List<ItemStack> usableItems;
 
-    List<ItemStack> usableItems;
-
-    private void processPlayerInventory() {
+    /*private void processPlayerInventory() {
         List<ItemStack> usableItems = Lists.newArrayList();
         for (final ItemStack itemStack : inventorySlots.getInventory())
         {
@@ -223,7 +261,7 @@ public class ProjectTableGui extends McGUI
             }
         }
         this.usableItems = usableItems;
-    }
+    }*/
 
     private void craftRecipe(ProjectTableRecipe recipe) {
         this.timesInventoryChanged = playerInventory.getTimesChanged();

@@ -10,6 +10,7 @@ public class ProjectTableRecipeInstance
 
     private final ProjectTableRecipe recipe;
     private boolean canCraft;
+    private boolean isLocked;
 
     public ProjectTableRecipeInstance(ProjectTableRecipe recipe)
     {
@@ -30,5 +31,13 @@ public class ProjectTableRecipeInstance
     public boolean canCraft()
     {
         return canCraft;
+    }
+
+    public void setIsLocked(boolean isLocked) {
+        this.isLocked = isLocked;
+    }
+
+    public boolean isLocked() {
+        return isLocked;
     }
 }
