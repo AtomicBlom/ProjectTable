@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:coal",
+      "Count": 9
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "minecraft:coal_block",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

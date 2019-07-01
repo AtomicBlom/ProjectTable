@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:dye",
+      "Count": 1,
+      "Damage": 1
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "minecraft:red_flower",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

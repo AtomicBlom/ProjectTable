@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:daylight_detector",
+      "Count": 1
+    }
+  ],
+  "ingredients": [
+    {
+      "oredict": "blockGlassColorless",
+      "Count": 3,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:quartz",
+      "Count": 3,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:wooden_slab",
+      "Count": 3,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

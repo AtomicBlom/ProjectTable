@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:end_bricks",
+      "Count": 4
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "minecraft:end_stone",
+      "Count": 4,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

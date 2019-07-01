@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:bed",
+      "Count": 1,
+      "Damage": 10
+    }
+  ],
+  "ingredients": [
+    {
+      "oredict": "woolPurple",
+      "Count": 3,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "oredict": "plankWood",
+      "Count": 3,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

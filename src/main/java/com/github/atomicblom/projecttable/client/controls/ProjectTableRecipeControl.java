@@ -3,11 +3,11 @@ package com.github.atomicblom.projecttable.client.controls;
 import com.github.atomicblom.projecttable.Logger;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
-import com.github.atomicblom.projecttable.client.mcgui.client.gui.GuiRenderer;
-import com.github.atomicblom.projecttable.client.mcgui.client.gui.GuiTexture;
-import com.github.atomicblom.projecttable.client.mcgui.client.gui.IGuiTemplate;
-import com.github.atomicblom.projecttable.client.mcgui.client.gui.IModelView;
-import com.github.atomicblom.projecttable.client.mcgui.client.gui.controls.ButtonControl;
+import com.github.atomicblom.projecttable.client.mcgui.GuiRenderer;
+import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
+import com.github.atomicblom.projecttable.client.mcgui.IGuiTemplate;
+import com.github.atomicblom.projecttable.client.mcgui.IModelView;
+import com.github.atomicblom.projecttable.client.mcgui.controls.ButtonControl;
 import com.github.atomicblom.projecttable.client.model.ProjectTableRecipeInstance;
 import com.github.atomicblom.projecttable.gui.events.IRecipeCraftingEventListener;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
@@ -84,7 +84,8 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
             final long totalWorldTime = Minecraft.getMinecraft().world.getTotalWorldTime();
             final int renderedItem = (int)((totalWorldTime / 20) % possibleItems.size());
 
-            final String requiredItemCount = String.format("%d", inputIngredient.getQuantityConsumed());
+            int quantityConsumed = inputIngredient.getQuantityConsumed();
+            final String requiredItemCount = String.format("%d", quantityConsumed);
             final int textWidth = guiRenderer.getStringWidth(requiredItemCount);
 
             final int border = 1;
@@ -93,11 +94,13 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
 
             guiRenderer.renderItem(this, possibleItems.get(renderedItem), getBounds().getWidth() - border - (itemSize + padding) * (j + border), padding + border);
 
-            if (inputIngredient.getQuantityConsumed() > 0) {
-                GlStateManager.depthFunc(GL11.GL_ALWAYS);
+            GlStateManager.depthFunc(GL11.GL_ALWAYS);
+            if (quantityConsumed > 0) {
                 guiRenderer.drawStringWithShadow(this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
-                GlStateManager.depthFunc(GL11.GL_LEQUAL);
+            } else {
+                guiRenderer.drawStringWithShadow(this, "T", getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
             }
+            GlStateManager.depthFunc(GL11.GL_LEQUAL);
         }
 
         GlStateManager.disableRescaleNormal();

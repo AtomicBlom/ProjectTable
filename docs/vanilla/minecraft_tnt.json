@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:tnt",
+      "Count": 1
+    }
+  ],
+  "ingredients": [
+    {
+      "oredict": "gunpowder",
+      "Count": 5,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:sand",
+      "Count": 4,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}
