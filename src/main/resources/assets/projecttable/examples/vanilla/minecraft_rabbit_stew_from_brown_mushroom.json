@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:rabbit_stew",
+      "Count": 1
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "minecraft:cooked_rabbit",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:carrot",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:baked_potato",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:brown_mushroom",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:bowl",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

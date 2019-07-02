@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:red_nether_brick",
+      "Count": 1
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "minecraft:netherbrick",
+      "Count": 2,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "id": "minecraft:nether_wart",
+      "Count": 2,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

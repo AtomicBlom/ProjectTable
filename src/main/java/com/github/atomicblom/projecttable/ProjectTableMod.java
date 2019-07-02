@@ -6,10 +6,14 @@ import com.github.atomicblom.projecttable.crafting.CraftingManager;
 import com.github.atomicblom.projecttable.gui.GuiHandler;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacketMessageHandler;
+import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacketMessageHandler;
+import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacket;
+import com.google.common.collect.ImmutableList;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.ProgressManager;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLInterModComms;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -17,6 +21,9 @@ import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Mod(modid = ProjectTableMod.MODID, name = ProjectTableMod.NAME, version = ProjectTableMod.VERSION)
 public class ProjectTableMod
@@ -40,8 +47,9 @@ public class ProjectTableMod
         configDir = event.getSuggestedConfigurationFile().getAbsoluteFile().getParent();
 
         logger = event.getModLog();
-        this.network = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
+        network = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
         network.registerMessage(ProjectTableCraftPacketMessageHandler.class, ProjectTableCraftPacket.class, 0, Side.SERVER);
+        network.registerMessage(ReplaceProjectTableRecipesPacketMessageHandler.class, ReplaceProjectTableRecipesPacket.class, 1, Side.CLIENT);
     }
 
     @EventHandler
@@ -55,23 +63,33 @@ public class ProjectTableMod
     @EventHandler
     public void onIMCEvent(FMLInterModComms.IMCEvent event)
     {
-        boolean hasError = false;
-        for (FMLInterModComms.IMCMessage message : event.getMessages()) {
-            if ("ProjectTableRecipe".equalsIgnoreCase(message.key) && message.isNBTMessage()) {
+        ProgressManager.ProgressBar progressBar = null;
+        try {
+            boolean hasError = false;
+            ImmutableList<FMLInterModComms.IMCMessage> allMessages = event.getMessages();
+            List<FMLInterModComms.IMCMessage> messages = allMessages.stream().filter(message -> "ProjectTableRecipe".equalsIgnoreCase(message.key) && message.isNBTMessage()).collect(Collectors.toList());
+            progressBar = ProgressManager.push("Project Table Recipes", messages.size());
+            for (FMLInterModComms.IMCMessage message : messages) {
                 try {
                     NBTTagCompound nbt = message.getNBTValue();
                     if (!nbt.hasKey("source")) {
                         nbt.setString("source", "imc:" + message.getSender());
                     }
+                    progressBar.step(nbt.getString("source"));
+
                     CraftingManager.INSTANCE.addFromNBT(nbt);
                 } catch (ProjectTableException | InvalidIngredientException e) {
                     hasError = true;
                     logger.error(e.getMessage());
                 }
             }
-        }
-        if (hasError) {
-            throw new ProjectTableException("Errors processing IMC based recipes");
+            if (hasError) {
+                throw new ProjectTableException("Errors processing IMC based recipes");
+            }
+        } finally {
+            if (progressBar != null) {
+                ProgressManager.pop(progressBar);
+            }
         }
     }
 }

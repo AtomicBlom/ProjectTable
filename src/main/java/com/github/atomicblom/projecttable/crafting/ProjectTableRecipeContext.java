@@ -203,7 +203,7 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
             }
         }
 
-        projectTableManager.addProjectTableRecipe(new ProjectTableRecipe(id, source, outputList, label, ingredients));
+        projectTableManager.addProjectTableRecipe(new ProjectTableRecipe(id, source, outputList, label, ingredients), true);
         return parent;
     }
 

@@ -39,8 +39,8 @@ public class ModCrafting
         readRecipesFromConfigDirectory();
         //readRecipesFromModAssets();
 
-        addExampleFluentRecipes(craftingManager);
-        addExampleNBTRecipes();
+        //addExampleFluentRecipes(craftingManager);
+        //addExampleNBTRecipes();
     }
 
     private static void readRecipesFromConfigDirectory() {

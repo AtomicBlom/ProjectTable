@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AtomicBlom/ProjectTable/04156961c15aae03d32c3deeba340d2ad6021636/src/main/resources/projectTableRecipe.schema.json",
+  "crafts": [
+    {
+      "id": "minecraft:tripwire_hook",
+      "Count": 2
+    }
+  ],
+  "ingredients": [
+    {
+      "oredict": "ingotIron",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "oredict": "stickWood",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    },
+    {
+      "oredict": "plankWood",
+      "Count": 1,
+      "tool": false,
+      "durabilityCost": 1
+    }
+  ]
+}

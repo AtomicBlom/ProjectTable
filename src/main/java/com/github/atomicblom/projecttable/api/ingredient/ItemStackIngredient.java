@@ -45,7 +45,12 @@ public class ItemStackIngredient implements IIngredient
      */
     public ItemStackIngredient(ItemStack itemStack)
     {
+
         this.itemStack = itemStack.copy();
+        if (itemStack.getCount() > 64) {
+            overriddenAmount = itemStack.getCount();
+            this.itemStack.setCount(1);
+        }
     }
 
     /**

@@ -53,7 +53,7 @@ public enum CraftingManager implements ICraftingManager
     @Override
     public ICraftingManagerIngredientsOrLabel addProjectTableRecipe(String modId, String recipeId) {
         return new ProjectTableRecipeContext(this, projectTableManager)
-                .setId("recipeId")
+                .setId(recipeId)
                 .setSource("mod:" + modId);
     }
 

@@ -48,7 +48,7 @@ public class CheckboxControl extends ControlBase {
         }
 
         if (this.value) {
-            getGuiRenderer().drawComponentTexture(this, activeOverlayTexture);
+            getGuiRenderer().drawComponentTextureWithOffset(this, activeOverlayTexture, 0, -2);
         }
     }
 
@@ -159,5 +159,9 @@ public class CheckboxControl extends ControlBase {
 
     public void setValue(boolean value) {
         this.value = value;
+    }
+
+    public void setPressedTexture(GuiTexture pressedTexture) {
+        this.pressedTexture = pressedTexture;
     }
 }
