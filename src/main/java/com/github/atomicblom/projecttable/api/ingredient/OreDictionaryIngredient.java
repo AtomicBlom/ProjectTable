@@ -19,6 +19,7 @@ package com.github.atomicblom.projecttable.api.ingredient;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.NonNullList;
 import net.minecraftforge.oredict.OreDictionary;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -109,7 +110,12 @@ public class OreDictionaryIngredient implements IIngredient
     @Override
     public void assertValid(String id, String source) {
         if (!OreDictionary.doesOreNameExist(this.name)) {
-            throw new InvalidIngredientException(id, source, "Invalid OreDictionary name: " + this.name);
+            throw new InvalidIngredientException(id, source, "Invalid OreDictionary named: " + this.name);
+        } else {
+            NonNullList<ItemStack> ores = OreDictionary.getOres(this.name, false);
+            if (ores.size() == 0) {
+                throw new InvalidIngredientException(id, source, "No items in OreDictionary named: " + this.name);
+            }
         }
     }
 
