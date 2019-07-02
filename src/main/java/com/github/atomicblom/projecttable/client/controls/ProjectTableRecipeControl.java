@@ -1,6 +1,7 @@
 package com.github.atomicblom.projecttable.client.controls;
 
 import com.github.atomicblom.projecttable.Logger;
+import com.github.atomicblom.projecttable.ProjectTableMod;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
 import com.github.atomicblom.projecttable.client.mcgui.GuiRenderer;
@@ -15,6 +16,7 @@ import com.google.common.collect.ImmutableList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.Rectangle;
@@ -26,6 +28,7 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
 {
     private final GuiTexture craftableTexture;
     private final GuiTexture uncraftableTexture;
+    private final String toolIndicatorLocalized;
     private ProjectTableRecipeInstance recipeInstance = null;
 
     public ProjectTableRecipeControl(GuiRenderer guiRenderer, GuiTexture craftableTexture, GuiTexture uncraftableTexture)
@@ -38,6 +41,8 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
         setDisabledTexture(uncraftableTexture);
         setHoverTexture(craftableTexture);
         setPressedTexture(uncraftableTexture);
+
+        toolIndicatorLocalized = I18n.format("gui.projecttable:project_table.tool_indicator");
     }
 
     @Override
@@ -81,6 +86,11 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
 
             final List<ItemStack> possibleItems = ItemStackUtils.getAllSubtypes(inputIngredient.getItemStacks());
 
+            if (possibleItems.size() == 0) {
+                ProjectTableMod.logger.error("Unable to get all item subtypes for input " + j + " in " + recipe.getId() + " from source " + recipe.getSource());
+                continue;
+            }
+
             final long totalWorldTime = Minecraft.getMinecraft().world.getTotalWorldTime();
             final int renderedItem = (int)((totalWorldTime / 20) % possibleItems.size());
 
@@ -98,7 +108,7 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
             if (quantityConsumed > 0) {
                 guiRenderer.drawStringWithShadow(this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
             } else {
-                guiRenderer.drawStringWithShadow(this, "T", getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
+                guiRenderer.drawStringWithShadow(this, toolIndicatorLocalized, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
             }
             GlStateManager.depthFunc(GL11.GL_LEQUAL);
         }

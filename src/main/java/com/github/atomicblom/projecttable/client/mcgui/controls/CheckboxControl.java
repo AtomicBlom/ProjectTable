@@ -24,11 +24,11 @@ public class CheckboxControl extends ControlBase {
     public void draw()
     {
         super.draw();
-        if (isDisabled) {
+        /*if (isDisabled) {
             getGuiRenderer().drawComponentTexture(this, disabledTexture);
         } else if (currentTexture != null)
         {
             getGuiRenderer().drawComponentTexture(this, currentTexture);
-        }
+        }*/
     }
 }

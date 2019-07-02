@@ -1,2 +1,3 @@
 tile.projecttable:project_table.name=Project Table
 tile.projecttable:project_table.tooltip=For large projects
+gui.projecttable:project_table.tool_indicator=T
