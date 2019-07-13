@@ -1,13 +1,14 @@
 package com.github.atomicblom.projecttable.api.ingredient;
 
-public class InvalidIngredientException extends RuntimeException {
+public class IngredientProblem {
     private final String id;
     private final String source;
+    private final String message;
 
-    public InvalidIngredientException(String id, String source, String message) {
-        super(message + " in " + source + " (" + id + ")");
+    public IngredientProblem(String id, String source, String message) {
         this.id = id;
         this.source = source;
+        this.message = message;
     }
 
     public String getId() {
@@ -16,5 +17,9 @@ public class InvalidIngredientException extends RuntimeException {
 
     public String getSource() {
         return source;
+    }
+
+    public String getMessage() {
+        return message;
     }
 }

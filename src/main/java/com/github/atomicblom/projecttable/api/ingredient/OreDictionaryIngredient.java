@@ -108,15 +108,16 @@ public class OreDictionaryIngredient implements IIngredient
     }
 
     @Override
-    public void assertValid(String id, String source) {
+    public IngredientProblem assertValid(String id, String source) {
         if (!OreDictionary.doesOreNameExist(this.name)) {
-            throw new InvalidIngredientException(id, source, "Invalid OreDictionary named: " + this.name);
+            return new IngredientProblem(id, source, "Invalid OreDictionary named: " + this.name);
         } else {
             NonNullList<ItemStack> ores = OreDictionary.getOres(this.name, false);
             if (ores.size() == 0) {
-                throw new InvalidIngredientException(id, source, "No items in OreDictionary named: " + this.name);
+                return new IngredientProblem(id, source, "No items in OreDictionary named: " + this.name);
             }
         }
+        return null;
     }
 
     @Override

@@ -60,5 +60,5 @@ public interface IIngredient
 
     boolean isFluidContainer();
 
-    void assertValid(String id, String source);
+    IngredientProblem assertValid(String id, String source);
 }

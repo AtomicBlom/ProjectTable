@@ -1,14 +1,16 @@
 package com.github.atomicblom.projecttable;
 
 import com.github.atomicblom.projecttable.api.ProjectTableInitializedEvent;
-import com.github.atomicblom.projecttable.api.ingredient.InvalidIngredientException;
+import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
+import com.github.atomicblom.projecttable.client.api.InvalidRecipeException;
 import com.github.atomicblom.projecttable.crafting.CraftingManager;
 import com.github.atomicblom.projecttable.gui.GuiHandler;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacketMessageHandler;
-import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacketMessageHandler;
 import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacket;
+import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacketMessageHandler;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -65,10 +67,11 @@ public class ProjectTableMod
     {
         ProgressManager.ProgressBar progressBar = null;
         try {
-            boolean hasError = false;
+
             ImmutableList<FMLInterModComms.IMCMessage> allMessages = event.getMessages();
             List<FMLInterModComms.IMCMessage> messages = allMessages.stream().filter(message -> "ProjectTableRecipe".equalsIgnoreCase(message.key) && message.isNBTMessage()).collect(Collectors.toList());
             progressBar = ProgressManager.push("Project Table Recipes", messages.size());
+            List<IngredientProblem> ingredient = Lists.newArrayList();
             for (FMLInterModComms.IMCMessage message : messages) {
                 try {
                     NBTTagCompound nbt = message.getNBTValue();
@@ -78,14 +81,18 @@ public class ProjectTableMod
                     progressBar.step(nbt.getString("source"));
 
                     CraftingManager.INSTANCE.addFromNBT(nbt);
-                } catch (ProjectTableException | InvalidIngredientException e) {
-                    hasError = true;
-                    logger.error(e.getMessage());
+                } catch (InvalidRecipeException e) {
+                    ingredient.addAll(e.getProblems());
                 }
             }
-            if (hasError) {
-                throw new ProjectTableException("Errors processing IMC based recipes");
+            if (!ingredient.isEmpty()) {
+                throw new ProjectTableException("Errors processing IMC based recipes:\n" +
+                        ingredient.stream()
+                                .map(i -> String.format("%s@%s: %s", i.getSource(),i.getId(), i.getMessage()))
+                                .collect(Collectors.joining("\n"))
+                );
             }
+
         } finally {
             if (progressBar != null) {
                 ProgressManager.pop(progressBar);

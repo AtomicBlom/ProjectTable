@@ -98,10 +98,11 @@ public class ItemStackIngredient implements IIngredient
     }
 
     @Override
-    public void assertValid(String id, String source) throws InvalidIngredientException {
+    public IngredientProblem assertValid(String id, String source) {
         if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(this.itemStack.getItem()) || this.itemStack.isEmpty()) {
-            throw new InvalidIngredientException(id, source, "Invalid ItemStack: " + this.itemStack.toString());
+            return new IngredientProblem(id, source, "Invalid ItemStack: " + this.itemStack.toString());
         }
+        return null;
     }
 
     @Override

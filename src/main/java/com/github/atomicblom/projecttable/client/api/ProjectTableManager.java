@@ -2,7 +2,7 @@ package com.github.atomicblom.projecttable.client.api;
 
 import com.github.atomicblom.projecttable.ProjectTableMod;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
-import com.github.atomicblom.projecttable.api.ingredient.InvalidIngredientException;
+import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -30,14 +30,21 @@ public enum ProjectTableManager
     private List<ProjectTableRecipe> initialSet = Lists.newArrayList();
 
     public void addProjectTableRecipe(ProjectTableRecipe recipe, boolean isInitialSet) {
+        List<IngredientProblem> problems = Lists.newArrayList();
         for (ItemStack itemStack : recipe.output) {
             if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(itemStack.getItem()) || itemStack.isEmpty()) {
-                throw new InvalidIngredientException(recipe.getId(), recipe.getSource(), "Invalid ItemStack: " + itemStack.toString());
+                problems.add(new IngredientProblem(recipe.getId(), recipe.getSource(), "Invalid ItemStack: " + itemStack.toString()));
             }
         }
 
         for (IIngredient ingredient : recipe.input) {
-            ingredient.assertValid(recipe.getId(), recipe.getSource());
+            IngredientProblem ingredientProblem = ingredient.assertValid(recipe.getId(), recipe.getSource());
+            if (ingredientProblem != null) {
+                problems.add(ingredientProblem);
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new InvalidRecipeException("There was an issue loading the recipe", problems);
         }
 
         recipes.add(recipe);
@@ -140,7 +147,7 @@ public enum ProjectTableManager
                 }
 
                 if (quantityToConsume <= 0 && durabilityToConsume <= 0) {
-                    return;
+                    break;
                 }
 
                 if (durabilityToConsume > 0) {

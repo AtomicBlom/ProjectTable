@@ -3,14 +3,18 @@ package com.github.atomicblom.projecttable.networking;
 
 import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.ProjectTableMod;
-import com.github.atomicblom.projecttable.api.ingredient.InvalidIngredientException;
+import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
+import com.github.atomicblom.projecttable.client.api.InvalidRecipeException;
 import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
+import com.google.common.collect.Lists;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ReplaceProjectTableRecipesPacketMessageHandler implements IMessageHandler<ReplaceProjectTableRecipesPacket, IMessage>
 {
@@ -21,18 +25,21 @@ public class ReplaceProjectTableRecipesPacketMessageHandler implements IMessageH
 
         ProjectTableMod.logger.info("Replacing client recipe list from server");
         ProjectTableManager.INSTANCE.clearRecipes();
-        boolean hasError = false;
+        List<IngredientProblem> ingredient = Lists.newArrayList();
         for (ProjectTableRecipe projectTableRecipe : recipe) {
-
             try {
                 ProjectTableManager.INSTANCE.addProjectTableRecipe(projectTableRecipe, false);
-            } catch (ProjectTableException | InvalidIngredientException e) {
-                hasError = true;
-                ProjectTableMod.logger.error(e.getMessage());
+            } catch (InvalidRecipeException e) {
+                ingredient.addAll(e.getProblems());
             }
         }
-        if (hasError) {
-            throw new ProjectTableException("Errors processing IMC based recipes");
+
+        if (!ingredient.isEmpty()) {
+            throw new ProjectTableException("Errors processing IMC based recipes:\n" +
+                    ingredient.stream()
+                            .map(i -> String.format("%s@%s: %s", i.getSource(),i.getId(), i.getMessage()))
+                            .collect(Collectors.joining("\n"))
+            );
         }
 
         return null;
