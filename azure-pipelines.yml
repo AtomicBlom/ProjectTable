@@ -50,7 +50,7 @@ steps:
 - task: CopyFiles@2
   inputs:
     sourceFolder: './build/libs/'
-    contents: 'ProjectTable-*-universal.jar'
+    contents: 'projecttable-*-universal.jar'
     targetFolder: $(build.artifactStagingDirectory)/release
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
 
@@ -83,7 +83,7 @@ steps:
 - task: CopyFiles@2
   inputs:
     sourceFolder: './build/libs/'
-    contents: 'ProjectTable-*-beta-universal.jar'
+    contents: 'projecttable-*-beta-universal.jar'
     targetFolder: $(build.artifactStagingDirectory)/beta
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
 
