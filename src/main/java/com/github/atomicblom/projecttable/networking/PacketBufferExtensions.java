@@ -2,7 +2,7 @@ package com.github.atomicblom.projecttable.networking;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 
 import javax.annotation.Nonnull;
@@ -20,17 +20,22 @@ public class PacketBufferExtensions
      */
     public static PacketBuffer writeLargeItemStackToBuffer(PacketBuffer packetBuffer, @Nonnull ItemStack stack)
     {
-        packetBuffer.writeShort(Item.getIdFromItem(stack.getItem()));
-        packetBuffer.writeInt(stack.getCount());
-        packetBuffer.writeShort(stack.getMetadata());
-        NBTTagCompound nbttagcompound = null;
+        //FIXME: Verify that this should be false.
+        boolean limitedTag = false;
+        if (stack.isEmpty()) {
+            packetBuffer.writeBoolean(false);
+        } else {
+            packetBuffer.writeBoolean(true);
+            Item item = stack.getItem();
+            packetBuffer.writeVarInt(Item.getIdFromItem(item));
+            packetBuffer.writeInt(stack.getCount());
+            CompoundNBT compoundnbt = null;
+            if (item.isDamageable() || item.shouldSyncTag()) {
+                compoundnbt = limitedTag ? stack.getShareTag() : stack.getTag();
+            }
 
-        if (stack.getItem().isDamageable() || stack.getItem().getShareTag())
-        {
-            nbttagcompound = stack.getTagCompound();
+            packetBuffer.writeCompoundTag(compoundnbt);
         }
-
-        packetBuffer.writeCompoundTag(nbttagcompound);
 
         return packetBuffer;
     }
@@ -41,11 +46,16 @@ public class PacketBufferExtensions
     @Nullable
     public static ItemStack readLargeItemStackFromBuffer(PacketBuffer packetBuffer) throws IOException
     {
-        int itemId = packetBuffer.readShort();
-        int itemCount = packetBuffer.readInt();
-        int itemMetadata = packetBuffer.readShort();
-        ItemStack itemstack = new ItemStack(Item.getItemById(itemId), itemCount, itemMetadata);
-        itemstack.setTagCompound(packetBuffer.readCompoundTag());
-        return itemstack;
+        if (!packetBuffer.readBoolean()) {
+            return ItemStack.EMPTY;
+        } else {
+            int i = packetBuffer.readVarInt();
+            int j = packetBuffer.readInt();
+            ItemStack itemstack = new ItemStack(Item.getItemById(i), j);
+            //itemstack.readShareTag(packetBuffer.readCompoundTag());
+
+            itemstack.setTag(packetBuffer.readCompoundTag());
+            return itemstack;
+        }
     }
 }

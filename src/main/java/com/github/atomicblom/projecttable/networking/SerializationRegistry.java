@@ -10,7 +10,7 @@ public enum SerializationRegistry
 {
     INSTANCE;
 
-    private Map<String, IIngredientSerializer> ingredientSerializers = Maps.newHashMap();
+    private final Map<String, IIngredientSerializer> ingredientSerializers = Maps.newHashMap();
 
 
     public void addSerializer(Class<? extends IIngredient> ingredientClass, IIngredientSerializer serializer)

@@ -5,8 +5,9 @@ import com.github.atomicblom.projecttable.client.mcgui.GuiLogger;
 import com.github.atomicblom.projecttable.client.mcgui.GuiRenderer;
 import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.events.ICurrentValueChangedEventListener;
-import org.lwjgl.util.ReadablePoint;
-import org.lwjgl.util.ReadableRectangle;
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
+import com.mojang.blaze3d.matrix.MatrixStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,12 +37,12 @@ public class ScrollbarControl extends ControlBase
     }
 
     @Override
-    public void draw()
+    public void draw(MatrixStack matrixStack)
     {
         if (!enabled) {
             return;
         }
-        getGuiRenderer().drawComponentTextureWithOffset(this, currentTexture, 0, getHandleTop());
+        getGuiRenderer().drawComponentTextureWithOffset(matrixStack, this, currentTexture, 0, getHandleTop());
     }
 
     public int getMinimumValue()
@@ -64,7 +65,7 @@ public class ScrollbarControl extends ControlBase
     private int usableScrollHeight = 0;
 
     @Override
-    protected void onResized(ReadableRectangle componentBounds) {
+    protected void onResized(IReadableRectangle componentBounds) {
         if (inactiveHandle != null)
         {
             usableScrollHeight = componentBounds.getHeight() - inactiveHandle.getBounds().getHeight();
@@ -72,7 +73,7 @@ public class ScrollbarControl extends ControlBase
     }
 
     @Override
-    protected boolean onMouseClick(ReadablePoint point, int mouseButton) {
+    protected boolean onMouseClick(IReadablePoint point, int mouseButton) {
         if (!enabled) {
             return false;
         }
@@ -86,7 +87,7 @@ public class ScrollbarControl extends ControlBase
     }
 
     @Override
-    protected boolean onMouseRelease(ReadablePoint point, int mouseButton) {
+    protected boolean onMouseRelease(IReadablePoint point, int mouseButton) {
         if (!enabled) {
             return false;
         }
@@ -99,7 +100,7 @@ public class ScrollbarControl extends ControlBase
     }
 
     @Override
-    protected boolean onMouseDragged(ReadablePoint point, ReadablePoint delta, int mouseButton) {
+    protected boolean onMouseDragged(IReadablePoint point, IReadablePoint delta, int mouseButton) {
         if (!enabled) {
             return false;
         }
@@ -117,14 +118,14 @@ public class ScrollbarControl extends ControlBase
     }
 
     @Override
-    public boolean mouseWheelDown(ReadablePoint point, int scrollAmount)
+    public boolean mouseWheelDown(IReadablePoint point, int scrollAmount)
     {
         setCurrentValue(getCurrentValue() + scrollSize);
         return true;
     }
 
     @Override
-    public boolean mouseWheelUp(ReadablePoint point, int scrollAmount)
+    public boolean mouseWheelUp(IReadablePoint point, int scrollAmount)
     {
         setCurrentValue(getCurrentValue() + -scrollSize);
         return true;

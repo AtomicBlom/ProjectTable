@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " pi",
+    "scs",
+    "l l"
+  ],
+  "key": {
+    "p": {
+      "item": "minecraft:paper"
+    },
+    "i": {
+      "tag": "forge:ingots/iron"
+    },
+    "s": {
+      "tag": "minecraft:wooden_slabs"
+    },
+    "c": {
+      "item": "minecraft:crafting_table"
+    },
+    "l": {
+      "tag": "minecraft:logs"
+    }
+  },
+  "result": {
+    "item": "projecttable:project_table",
+    "count": 1
+  }
+}

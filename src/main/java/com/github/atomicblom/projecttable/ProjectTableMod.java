@@ -2,83 +2,108 @@ package com.github.atomicblom.projecttable;
 
 import com.github.atomicblom.projecttable.api.ProjectTableInitializedEvent;
 import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
+import com.github.atomicblom.projecttable.client.ProjectTableGui;
 import com.github.atomicblom.projecttable.client.api.InvalidRecipeException;
 import com.github.atomicblom.projecttable.crafting.CraftingManager;
-import com.github.atomicblom.projecttable.gui.GuiHandler;
+import com.github.atomicblom.projecttable.library.ContainerTypeLibrary;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
-import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacketMessageHandler;
 import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacket;
-import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacketMessageHandler;
-import com.google.common.collect.ImmutableList;
+import com.github.atomicblom.projecttable.registration.ModCrafting;
 import com.google.common.collect.Lists;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.InterModComms;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.StartupMessageManager;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.ProgressManager;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLInterModComms;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
+import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Mod(modid = ProjectTableMod.MODID, name = ProjectTableMod.NAME, version = ProjectTableMod.VERSION)
+@Mod(ProjectTableMod.MODID)
 public class ProjectTableMod
 {
     public static final String MODID = "projecttable";
     public static final String NAME = "Project Table";
     public static final String VERSION = "1.0";
 
-    public static Logger logger;
+    public static Logger logger = LogManager.getLogger(MODID);
+    public static boolean IS_CI_BUILD = false;
 
-    @Mod.Instance
+    public ProjectTableMod() {
+        if (Boolean.getBoolean("@IS_CI_BUILD@")) {
+            IS_CI_BUILD = true;
+        }
+
+        instance = this;
+        final FMLJavaModLoadingContext javaModLoadingContext = FMLJavaModLoadingContext.get();
+        IEventBus eventBus = javaModLoadingContext.getModEventBus();
+        eventBus.addListener(this::setup);
+        eventBus.addListener(this::onIMCEvent);
+        eventBus.addListener(this::onEnqueueIMCEvent);
+        eventBus.addListener(this::onClientSetup);
+        eventBus.register(ProjectTableConfig.class);
+
+        final ModLoadingContext modLoadingContext1 = ModLoadingContext.get();
+        modLoadingContext1.registerConfig(ModConfig.Type.COMMON, ProjectTableConfig.commonSpec);
+    }
+
     public static ProjectTableMod instance = null;
-    public static SimpleNetworkWrapper network;
+    public static SimpleChannel network;
 
-    public String configDir;
-
-
-    @EventHandler
-    public void preInit(FMLPreInitializationEvent event)
+    public void setup(final FMLCommonSetupEvent event)
     {
-        configDir = event.getSuggestedConfigurationFile().getAbsoluteFile().getParent();
-
-        logger = event.getModLog();
-        network = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
-        network.registerMessage(ProjectTableCraftPacketMessageHandler.class, ProjectTableCraftPacket.class, 0, Side.SERVER);
-        network.registerMessage(ReplaceProjectTableRecipesPacketMessageHandler.class, ReplaceProjectTableRecipesPacket.class, 1, Side.CLIENT);
+        int packetId = 0;
+        network = NetworkRegistry.newSimpleChannel(
+                new ResourceLocation(MODID, "main"),
+                () -> ProjectTableMod.VERSION,
+                ProjectTableMod.VERSION::equals, // TODO: Probably should let same versions match each other
+                ProjectTableMod.VERSION::equals
+        );
+        network.registerMessage(packetId++, ReplaceProjectTableRecipesPacket.class, ReplaceProjectTableRecipesPacket::serialize, ReplaceProjectTableRecipesPacket::deserialize, ReplaceProjectTableRecipesPacket::received);
+        network.registerMessage(packetId++, ProjectTableCraftPacket.class, ProjectTableCraftPacket::serialize, ProjectTableCraftPacket::deserialize, ProjectTableCraftPacket::received);
     }
 
-    @EventHandler
-    public void init(FMLInitializationEvent event)
-    {
-        NetworkRegistry.INSTANCE.registerGuiHandler(instance, GuiHandler.INSTANCE);
-        ProjectTableInitializedEvent initializedEvent = new ProjectTableInitializedEvent(CraftingManager.INSTANCE);
-        MinecraftForge.EVENT_BUS.post(initializedEvent);
+    private void onClientSetup(final FMLClientSetupEvent event) {
+        logger.info("Got game settings {}", event.getMinecraftSupplier().get().gameSettings);
+        ScreenManager.registerFactory(ContainerTypeLibrary.projectTableContainer, ProjectTableGui::new);
     }
 
-    @EventHandler
-    public void onIMCEvent(FMLInterModComms.IMCEvent event)
+    public void onEnqueueIMCEvent(InterModEnqueueEvent event) {
+        ModCrafting.onProjectTableInitialized(new ProjectTableInitializedEvent(CraftingManager.INSTANCE));
+    }
+
+    public void onIMCEvent(InterModProcessEvent event)
     {
-        ProgressManager.ProgressBar progressBar = null;
+        StartupMessageManager.addModMessage("Project Table Recipes");
         try {
+            List<InterModComms.IMCMessage> messages = event
+                    .getIMCStream()
+                    .filter(message -> "ProjectTableRecipe".equalsIgnoreCase(message.getMethod()))
+                    .collect(Collectors.toList());
 
-            ImmutableList<FMLInterModComms.IMCMessage> allMessages = event.getMessages();
-            List<FMLInterModComms.IMCMessage> messages = allMessages.stream().filter(message -> "ProjectTableRecipe".equalsIgnoreCase(message.key) && message.isNBTMessage()).collect(Collectors.toList());
-            progressBar = ProgressManager.push("Project Table Recipes", messages.size());
             List<IngredientProblem> ingredient = Lists.newArrayList();
-            for (FMLInterModComms.IMCMessage message : messages) {
+            for (InterModComms.IMCMessage message : messages) {
                 try {
-                    NBTTagCompound nbt = message.getNBTValue();
-                    if (!nbt.hasKey("source")) {
-                        nbt.setString("source", "imc:" + message.getSender());
+                    Object o = message.getMessageSupplier().get();
+                    if (!(o instanceof CompoundNBT)) continue;
+
+                    CompoundNBT nbt = (CompoundNBT)o;
+                    if (!nbt.contains("source")) {
+                        nbt.putString("source", "imc:" + message.getSenderModId());
                     }
-                    progressBar.step(nbt.getString("source"));
 
                     CraftingManager.INSTANCE.addFromNBT(nbt);
                 } catch (InvalidRecipeException e) {
@@ -94,9 +119,7 @@ public class ProjectTableMod
             }
 
         } finally {
-            if (progressBar != null) {
-                ProgressManager.pop(progressBar);
-            }
+            StartupMessageManager.addModMessage("Completed Project Table Recipes");
         }
     }
 }

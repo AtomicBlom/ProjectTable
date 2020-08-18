@@ -9,17 +9,17 @@ import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.IGuiTemplate;
 import com.github.atomicblom.projecttable.client.mcgui.IModelView;
 import com.github.atomicblom.projecttable.client.mcgui.controls.ButtonControl;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
 import com.github.atomicblom.projecttable.client.model.ProjectTableRecipeInstance;
 import com.github.atomicblom.projecttable.gui.events.IRecipeCraftingEventListener;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
 import com.google.common.collect.ImmutableList;
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.util.Rectangle;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,10 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
     private final GuiTexture craftableTexture;
     private final GuiTexture uncraftableTexture;
     private final String toolIndicatorLocalized;
+
     private ProjectTableRecipeInstance recipeInstance = null;
+    private ProjectTableRecipe recipe = null;
+    private ArrayList<List<ItemStack>> recipeIngredients = null;
 
     public ProjectTableRecipeControl(GuiRenderer guiRenderer, GuiTexture craftableTexture, GuiTexture uncraftableTexture)
     {
@@ -46,21 +49,21 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
     }
 
     @Override
-    public void draw() {
-        if (recipeInstance == null) { return; }
-        super.draw();
-
+    public void draw(MatrixStack matrixStack) {
+        if (recipeInstance == null || recipe == null || recipeIngredients == null) { return; }
         setDisabled(!recipeInstance.canCraft());
-        final ProjectTableRecipe recipe = recipeInstance.getRecipe();
+
+        super.draw(matrixStack);
 
         final GuiRenderer guiRenderer = getGuiRenderer();
-
-        GlStateManager.enableRescaleNormal();
+        matrixStack.push();
+        matrixStack.translate(0, 0, 200);
+        RenderSystem.disableDepthTest();
         final ImmutableList<ItemStack> output = recipe.getOutput();
         final ItemStack outputItemStack = output.get(0);
         if (output.size() == 1 && !outputItemStack.isEmpty())
         {
-            RenderHelper.enableGUIStandardItemLighting();
+            RenderHelper.enableStandardItemLighting();
             guiRenderer.renderItem(this, outputItemStack, 2, 3);
             RenderHelper.disableStandardItemLighting();
 
@@ -69,29 +72,26 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
             final String craftedItemCount = String.format("%d", itemCount);
             final int textWidth = guiRenderer.getStringWidth(craftedItemCount);
 
-            GlStateManager.depthFunc(GL11.GL_ALWAYS);
+            matrixStack.push();
+            matrixStack.translate(0, 0, 200);
             if (itemCount > 0) {
-                guiRenderer.drawStringWithShadow(this, craftedItemCount, 16 - textWidth + 2, 12, 16777215);
+                guiRenderer.drawStringWithShadow(matrixStack, this, craftedItemCount, 16 - textWidth + 2, 12, 16777215);
             }
-            GlStateManager.depthFunc(GL11.GL_LEQUAL);
-
-
-            guiRenderer.drawStringWithShadow(this, recipe.getDisplayName(), 2 + 20, 8, 16777215);
+            guiRenderer.drawStringWithShadow(matrixStack, this, recipe.getDisplayName().getString(), 2 + 20, 8, 16777215);
+            matrixStack.pop();
         }
 
-        final int inputItemCount = recipe.getInput().size();
+        final int inputItemCount = recipeIngredients.size();
 
         for (int j = 0; j < inputItemCount; ++j) {
             final IIngredient inputIngredient = recipe.getInput().get(j);
-
-            final List<ItemStack> possibleItems = ItemStackUtils.getAllSubtypes(inputIngredient.getItemStacks());
+            final List<ItemStack> possibleItems = recipeIngredients.get(j);
 
             if (possibleItems.size() == 0) {
-                ProjectTableMod.logger.error("Unable to get all item subtypes for input " + j + " in " + recipe.getId() + " from source " + recipe.getSource());
                 continue;
             }
 
-            final long totalWorldTime = Minecraft.getMinecraft().world.getTotalWorldTime();
+            final long totalWorldTime = Minecraft.getInstance().world.getGameTime();
             final int renderedItem = (int)((totalWorldTime / 20) % possibleItems.size());
 
             int quantityConsumed = inputIngredient.getQuantityConsumed();
@@ -102,28 +102,25 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
             final int padding = 2;
             final int itemSize = 16;
 
-            guiRenderer.renderItem(this, possibleItems.get(renderedItem), getBounds().getWidth() - border - (itemSize + padding) * (j + border), padding + border);
+            guiRenderer.renderItem(this, possibleItems.get(renderedItem), getBounds().getWidth() - border - (itemSize + padding + 2) * (j + border), padding + border);
 
-            GlStateManager.depthFunc(GL11.GL_ALWAYS);
+            matrixStack.push();
+            matrixStack.translate(0, 0, 200);
             if (quantityConsumed > 0) {
-                guiRenderer.drawStringWithShadow(this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
+                guiRenderer.drawStringWithShadow(matrixStack, this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding + 2) * j - textWidth - border, 12, 16777215);
             } else {
-                guiRenderer.drawStringWithShadow(this, toolIndicatorLocalized, getBounds().getWidth() - border - (itemSize + padding) * j - textWidth - border, 12, 16777215);
+                guiRenderer.drawStringWithShadow(matrixStack, this, toolIndicatorLocalized, getBounds().getWidth() - border - (itemSize + padding + 2) * j - textWidth - border, 12, 16777215);
             }
-            GlStateManager.depthFunc(GL11.GL_LEQUAL);
+            matrixStack.pop();
         }
+        matrixStack.pop();
 
-        GlStateManager.disableRescaleNormal();
+        RenderSystem.enableDepthTest();
     }
 
     public ProjectTableRecipeInstance getRecipe()
     {
         return recipeInstance;
-    }
-
-    public void setRecipe(ProjectTableRecipeInstance recipeInstance)
-    {
-        this.recipeInstance = recipeInstance;
     }
 
     @Override
@@ -140,6 +137,28 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
     public void setModel(ProjectTableRecipeInstance recipeInstance)
     {
         this.recipeInstance = recipeInstance;
+        this.recipe = recipeInstance != null ? recipeInstance.getRecipe() : null;
+        if (recipe == null || recipe.getInput() == null) {
+            recipeIngredients = null;
+            return;
+        }
+
+        final int inputItemCount = recipe.getInput().size();
+        recipeIngredients = new ArrayList<>(inputItemCount);
+        for (int j = 0; j < inputItemCount; ++j) {
+            final IIngredient inputIngredient = recipe.getInput().get(j);
+            final List<ItemStack> possibleItems = ItemStackUtils.getAllSubtypes(inputIngredient.getItemStacks());
+            if (possibleItems.size() == 0) {
+                ProjectTableMod.logger.error("Unable to get all item subtypes for input " + j + " in " + recipe.getId() + " from source " + recipe.getSource());
+            }
+
+            recipeIngredients.add(j, possibleItems);
+        }
+    }
+
+    @Override
+    public ProjectTableRecipeInstance getModel() {
+        return this.recipeInstance;
     }
 
     @Override

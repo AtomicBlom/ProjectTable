@@ -1,8 +1,13 @@
 package com.github.atomicblom.projecttable.inventory;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
+import com.github.atomicblom.projecttable.library.ContainerTypeLibrary;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.*;
+import net.minecraft.inventory.container.ClickType;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.CraftingResultSlot;
+import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -13,45 +18,50 @@ import net.minecraft.world.World;
  */
 public class ProjectTableContainer extends Container {
 
+    private final PlayerInventory playerInventory;
     /** The crafting matrix inventory (3x3). */
-    public InventoryCrafting craftMatrix = new InventoryCrafting(this, 1, 32);
-    public IInventory craftResult = new InventoryCraftResult();
+    public CraftingInventory craftMatrix = new CraftingInventory(this, 1, 32);
+    public IInventory craftResult = new CraftResultInventory();
     private World worldObj;
     /** Position of the workbench */
     private BlockPos pos;
 
-    public ProjectTableContainer(InventoryPlayer playerInventory) {
-
-        addPlayerInventory(playerInventory, 8, 145);
-        //addSlotToContainer(new ProjectTableCraftingSlot(playerInventory.player, craftMatrix, craftResult, 0));
+    public ProjectTableContainer(int id, PlayerInventory playerInventory) {
+        super(ContainerTypeLibrary.projectTableContainer, id);
+        this.playerInventory = playerInventory;
+        addPlayerInventory(playerInventory, 79, 145);
     }
 
     @Override
-    public boolean canInteractWith(EntityPlayer playerIn) {
+    public boolean canInteractWith(PlayerEntity playerIn) {
         return true;
     }
 
     @Override
-    public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, EntityPlayer player) {
+    public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
         if (clickTypeIn == ClickType.QUICK_MOVE) {
             return null;
         }
         return super.slotClick(slotId, dragType, clickTypeIn, player);
     }
 
-    class ProjectTableCraftingSlot extends SlotCrafting
-    {
-        private final EntityPlayer player;
-        private final InventoryCrafting craftMatrix;
+    public PlayerInventory getPlayerInventory() {
+        return this.playerInventory;
+    }
 
-        public ProjectTableCraftingSlot(EntityPlayer player, InventoryCrafting craftingMaterials, IInventory craftingOutput, int slotIndex)
+    class ProjectTableCraftingSlot extends CraftingResultSlot
+    {
+        private final PlayerEntity player;
+        private final CraftingInventory craftMatrix;
+
+        public ProjectTableCraftingSlot(PlayerEntity player, CraftingInventory craftingMaterials, IInventory craftingOutput, int slotIndex)
         {
             super(player, craftingMaterials, craftingOutput, slotIndex, 0, 0);
             this.player = player;
             craftMatrix = craftingMaterials;
         }
 
-        public void onPickupFromSlot(EntityPlayer playerIn, ItemStack stack)
+        public void onPickupFromSlot(PlayerEntity playerIn, ItemStack stack)
         {
             //FMLCommonHandler.instance().firePlayerCraftingEvent(playerIn, stack, ProjectTableContainer.this.craftMatrix);
             onCrafting(stack);
@@ -75,8 +85,8 @@ public class ProjectTableContainer extends Container {
                 //noinspection ObjectEquality
                 if (itemStack1.getItem() == itemStack2.getItem())
                 {
-                    if (itemStack1.getItemDamage() == itemStack2.getItemDamage() &&
-                            areItemStackTagsEqual(itemStack1, itemStack2)) return true;
+                    return itemStack1.getDamage() == itemStack2.getDamage() &&
+                            areItemStackTagsEqual(itemStack1, itemStack2);
                 }
             }
         }
@@ -86,17 +96,13 @@ public class ProjectTableContainer extends Container {
 
     private static boolean areItemStackTagsEqual(ItemStack itemStack1, ItemStack itemStack2)
     {
-        if (itemStack1.hasTagCompound() && itemStack2.hasTagCompound())
+        if (itemStack1.hasTag() && itemStack2.hasTag())
         {
-            if (ItemStack.areItemStackTagsEqual(itemStack1, itemStack2))
-            {
-                return true;
-            }
+            return ItemStack.areItemStackTagsEqual(itemStack1, itemStack2);
         } else
         {
             return true;
         }
-        return false;
     }
 
     private static ItemStack cloneItemStack(ItemStack itemStack, int stackSize)
@@ -117,7 +123,7 @@ public class ProjectTableContainer extends Container {
             int currentSlotIndex = ascending ? slotMax - 1 : slotMin;
             while (!itemStack.isEmpty() && isSlotInRange(currentSlotIndex, slotMin, slotMax, ascending))
             {
-                final Slot slot = (Slot) inventorySlots.get(currentSlotIndex);
+                final Slot slot = inventorySlots.get(currentSlotIndex);
                 final ItemStack stackInSlot = slot.getStack();
 
                 if (slot.isItemValid(itemStack) && equalsIgnoreStackSize(itemStack, stackInSlot))
@@ -150,7 +156,7 @@ public class ProjectTableContainer extends Container {
 
             while (isSlotInRange(currentSlotIndex, slotMin, slotMax, ascending))
             {
-                final Slot slot = (Slot) inventorySlots.get(currentSlotIndex);
+                final Slot slot = inventorySlots.get(currentSlotIndex);
                 final ItemStack stackInSlot = slot.getStack();
 
                 if (slot.isItemValid(itemStack) && stackInSlot == null)
@@ -172,7 +178,7 @@ public class ProjectTableContainer extends Container {
         return slotFound;
     }
 
-    void addPlayerInventory(InventoryPlayer playerInventory, int xOffset, int yOffset)
+    void addPlayerInventory(PlayerInventory playerInventory, int xOffset, int yOffset)
     {
         for (int inventoryRowIndex = 0; inventoryRowIndex < PLAYER_INVENTORY_ROWS; ++inventoryRowIndex)
         {
@@ -182,21 +188,23 @@ public class ProjectTableContainer extends Container {
         addActionBarSlots(playerInventory, xOffset, yOffset);
     }
 
-    private void addInventoryRowSlots(InventoryPlayer playerInventory, int xOffset, int yOffset, int rowIndex)
+    private void addInventoryRowSlots(PlayerInventory playerInventory, int xOffset, int yOffset, int rowIndex)
     {
         for (int inventoryColumnIndex = 0; inventoryColumnIndex < PLAYER_INVENTORY_COLUMNS; ++inventoryColumnIndex)
         {
             //noinspection ObjectAllocationInLoop
-            addSlotToContainer(new Slot(playerInventory, inventoryColumnIndex + rowIndex * 9 + 9, xOffset + inventoryColumnIndex * 18, yOffset + rowIndex * 18));
+
+            addSlot(new Slot(playerInventory, inventoryColumnIndex + rowIndex * 9 + 9, xOffset + inventoryColumnIndex * 18, yOffset + rowIndex * 18));
+
         }
     }
 
-    private void addActionBarSlots(InventoryPlayer playerInventory, int xOffset, int yOffset)
+    private void addActionBarSlots(PlayerInventory playerInventory, int xOffset, int yOffset)
     {
         for (int actionBarSlotIndex = 0; actionBarSlotIndex < 9; ++actionBarSlotIndex)
         {
             //noinspection ObjectAllocationInLoop
-            addSlotToContainer(new Slot(playerInventory, actionBarSlotIndex, xOffset + actionBarSlotIndex * 18, yOffset + 58));
+            addSlot(new Slot(playerInventory, actionBarSlotIndex, xOffset + actionBarSlotIndex * 18, yOffset + 58));
         }
     }
 
@@ -204,16 +212,10 @@ public class ProjectTableContainer extends Container {
     {
         if (slotIndex >= indexFirstStdSlot && slotIndex < inventorySlots.size() - 9)
         {
-            if (!mergeItemStack(slotItemStack, inventorySlots.size() - 9, inventorySlots.size(), false))
-            {
-                return true;
-            }
+            return !mergeItemStack(slotItemStack, inventorySlots.size() - 9, inventorySlots.size(), false);
         } else if (slotIndex >= inventorySlots.size() - 9 && slotIndex < inventorySlots.size())
         {
-            if (!mergeItemStack(slotItemStack, indexFirstStdSlot, inventorySlots.size() - 9, false))
-            {
-                return true;
-            }
+            return !mergeItemStack(slotItemStack, indexFirstStdSlot, inventorySlots.size() - 9, false);
         }
         return false;
     }

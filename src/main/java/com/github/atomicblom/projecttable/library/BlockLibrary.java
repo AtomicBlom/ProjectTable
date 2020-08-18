@@ -2,10 +2,10 @@ package com.github.atomicblom.projecttable.library;
 
 import com.github.atomicblom.projecttable.ProjectTableMod;
 import net.minecraft.block.Block;
-import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.registries.ObjectHolder;
 
 @SuppressWarnings("Duplicates")
-@GameRegistry.ObjectHolder(ProjectTableMod.MODID)
+@ObjectHolder(ProjectTableMod.MODID)
 public class BlockLibrary {
     public static final Block project_table;
 

@@ -16,30 +16,31 @@
 
 package com.github.atomicblom.projecttable.client.mcgui;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiContainer;
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
+import com.github.atomicblom.projecttable.client.mcgui.util.Point;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
+import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.inventory.Container;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.container.Container;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.util.Point;
-import org.lwjgl.util.ReadablePoint;
-import org.lwjgl.util.Rectangle;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 
-import java.io.IOException;
-
-public abstract class McGUI extends GuiContainer
+public abstract class McGUI<T extends Container> extends ContainerScreen<T>
 {
     private static final int TEXT_COLOR = 4210752;
     private static final String LOCATION = "textures/gui/";
     private static final String FILE_EXTENSION = ".png";
-    private static final String INVENTORY = "inventory.inventory";
+    private static final ITextComponent INVENTORY = new TranslationTextComponent("inventory.inventory");
     private final String modId = "";
     private ControlBase rootControl = null;
 
-    protected McGUI(Container container)
+    protected McGUI(T container, PlayerInventory playerInventory, ITextComponent title)
     {
-        super(container);
+        super(container, playerInventory, title);
+        this.addListener(this);
     }
 
     protected abstract ResourceLocation getResourceLocation(String path);
@@ -55,12 +56,21 @@ public abstract class McGUI extends GuiContainer
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+    protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseZ)
+    {
+        final String name = I18n.format(getInventoryName());
+
+        font.drawString(matrixStack, name, xSize / 2.0f - font.getStringWidth(name) / 2.0f, 6, TEXT_COLOR);
+        font.func_238407_a_(matrixStack, INVENTORY, 8, ySize - 96 + 2, TEXT_COLOR);
+    }
+
+    @Override
+    protected void drawGuiContainerBackgroundLayer(MatrixStack matrixStack, float partialTicks, int mouseX, int mouseY) {
         final int xStart = (width - xSize) / 2;
         final int yStart = (height - ySize) / 2;
 
         rootControl.setLocation(xStart, yStart);
-        rootControl.draw();
+        rootControl.draw(matrixStack);
     }
 
 
@@ -76,6 +86,54 @@ public abstract class McGUI extends GuiContainer
     private int touchValue;
     private long lastMouseEvent;
 
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int mouseButtons, double dragDeltaX, double dragDeltaZ) {
+        Point dragDelta = new Point((int) dragDeltaX, (int) dragDeltaZ);
+
+        return super.mouseDragged(mouseX, mouseY, mouseButtons, dragDeltaX, dragDeltaZ) ||
+                this.rootControl.mouseDragged(getGuiMousePointInternal(mouseX, mouseY), dragDelta, mouseButtons);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        super.mouseMoved(mouseX, mouseY);
+        this.rootControl.mouseMoved(getGuiMousePointInternal(mouseX, mouseY));
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int mouseButtons) {
+        return this.rootControl.mouseClicked(getGuiMousePointInternal(mouseX, mouseY), mouseButtons) ||
+                super.mouseClicked(mouseX, mouseY, mouseButtons);
+    }
+
+    private IReadablePoint getGuiMousePointInternal(double mouseX, double mouseY) {
+        return new Point((int)mouseX - (width - xSize) / 2, (int)mouseY - (height - ySize) / 2);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int mouseButtons) {
+        boolean eventOccurred = super.mouseReleased(mouseX, mouseY, mouseButtons);
+
+        eventOccurred |= this.rootControl.mouseReleased(getGuiMousePointInternal(mouseX, mouseY), mouseButtons);
+
+        for (final ControlBase control : MouseCapture.getCapturedControls())
+        {
+            eventOccurred |= control.mouseReleased(currentMouseLocation, eventButton);
+        }
+        return eventOccurred;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollAmount) {
+        if (scrollAmount > 0) {
+            this.rootControl.mouseWheelUp(getGuiMousePointInternal(mouseX, mouseY), (int)scrollAmount);
+        } else {
+            this.rootControl.mouseWheelDown(getGuiMousePointInternal(mouseX, mouseY), (int)scrollAmount);
+        }
+        return false;
+    }
+
+    /*
     @Override
     public void handleMouseInput() throws IOException {
         super.handleMouseInput();
@@ -151,7 +209,7 @@ public abstract class McGUI extends GuiContainer
                     Point p = new Point();
                     for (final ControlBase control : MouseCapture.getCapturedControls())
                     {
-                        final ReadablePoint controlLocation = GuiRenderer.getControlLocation(control);
+                        final IReadablePoint controlLocation = GuiRenderer.getControlLocation(control);
                         p.setLocation(currentMouseLocation);
                         p.untranslate(controlLocation);
                         p.translate(rootControl.getBounds());
@@ -170,14 +228,5 @@ public abstract class McGUI extends GuiContainer
                 rootControl.mouseWheelDown(currentMouseLocation, scrollAmount);
             }
         }
-    }
-
-    @Override
-    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseZ)
-    {
-        final String name = I18n.format(getInventoryName());
-
-        fontRenderer.drawString(name, xSize / 2 - fontRenderer.getStringWidth(name) / 2, 6, TEXT_COLOR);
-        fontRenderer.drawString(I18n.format(INVENTORY), 8, ySize - 96 + 2, TEXT_COLOR);
-    }
+    }*/
 }

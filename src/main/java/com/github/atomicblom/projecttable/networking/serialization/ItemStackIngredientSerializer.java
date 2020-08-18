@@ -7,8 +7,6 @@ import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
 import net.minecraft.network.PacketBuffer;
 
-import java.io.IOException;
-
 /**
  * Created by codew on 26/01/2016.
  */
@@ -17,20 +15,14 @@ public class ItemStackIngredientSerializer implements IIngredientSerializer
     @Override
     public IIngredient deserialize(PacketBuffer buffer)
     {
-        try
-        {
-            ItemStackIngredient itemStackIngredient = new ItemStackIngredient(buffer.readItemStack());
-            int consumedSize = buffer.readInt();
-            if (consumedSize != itemStackIngredient.getQuantityConsumed()) {
-                itemStackIngredient.overrideAmountConsumed(consumedSize);
-            }
-            itemStackIngredient.setDurabilityCost(buffer.readInt());
-            itemStackIngredient.setFluidContainer(buffer.readBoolean());
-            return itemStackIngredient;
-        } catch (IOException e)
-        {
-            throw new ProjectTableException(e);
+        ItemStackIngredient itemStackIngredient = new ItemStackIngredient(buffer.readItemStack());
+        int consumedSize = buffer.readInt();
+        if (consumedSize != itemStackIngredient.getQuantityConsumed()) {
+            itemStackIngredient.overrideAmountConsumed(consumedSize);
         }
+        itemStackIngredient.setDurabilityCost(buffer.readInt());
+        itemStackIngredient.setFluidContainer(buffer.readBoolean());
+        return itemStackIngredient;
     }
 
     @Override

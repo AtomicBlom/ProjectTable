@@ -3,13 +3,16 @@ package com.github.atomicblom.projecttable.client.mcgui.controls;
 import com.github.atomicblom.projecttable.client.mcgui.*;
 import com.github.atomicblom.projecttable.client.mcgui.events.ICurrentValueChangedEventListener;
 import com.github.atomicblom.projecttable.client.mcgui.events.IItemMadeVisibleEventListener;
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
 import com.google.common.collect.Lists;
-import org.lwjgl.util.ReadablePoint;
-import org.lwjgl.util.ReadableRectangle;
-import org.lwjgl.util.Rectangle;
+import com.mojang.blaze3d.matrix.MatrixStack;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("TypeParameterNamingConvention")
 public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBase & IGuiTemplate<TChildComponentTemplate> & IModelView<TModel>> extends ControlBase
@@ -78,8 +81,14 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
         return this;
     }
 
+    public Iterable<TModel> getVisibleItems() {
+        return Arrays.stream(itemRenderers)
+                .map(ir -> ((IModelView<TModel>)ir).getModel())
+                .collect(Collectors.toList());
+    }
+
     @Override
-    public boolean mouseWheelUp(ReadablePoint point, int scrollAmount)
+    public boolean mouseWheelUp(IReadablePoint point, int scrollAmount)
     {
         if (scrollbar != null) {
             return scrollbar.mouseWheelUp(point, scrollAmount);
@@ -91,7 +100,7 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
     }
 
     @Override
-    public boolean mouseWheelDown(ReadablePoint point, int scrollAmount)
+    public boolean mouseWheelDown(IReadablePoint point, int scrollAmount)
     {
         if (scrollbar != null) {
             return scrollbar.mouseWheelDown(point, scrollAmount);
@@ -103,13 +112,13 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
     }
 
     @Override
-    public void draw()
+    public void draw(MatrixStack matrixStack)
     {
         if (itemRenderers.length == 0 || items.isEmpty()) {
             return;
         }
 
-        final ReadableRectangle templateBounds = template.getBounds();
+        final IReadableRectangle templateBounds = template.getBounds();
 
         final int itemHeight = templateBounds.getHeight() * items.size();
         final int viewportHeight = templateBounds.getHeight() * 5;
@@ -158,7 +167,8 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
                     ((IModelView<TModel>) itemRenderer).setModel(model);
                 }
 
-                onItemMadeVisibleInternal(itemRenderer, model);
+                //noinspection unchecked,ConstantConditions
+                onItemMadeVisibleInternal((TChildComponentTemplate)itemRenderer, model);
             }
 
             itemRenderer.setLocation(0, templateBounds.getHeight() * i - itemOffset);
@@ -166,7 +176,7 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
 
         previousItemIndex = itemIndex;
 
-        super.draw();
+        super.draw(matrixStack);
 
         getGuiRenderer().endViewport();
     }
@@ -184,18 +194,18 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
     // Item Visible
     /////////////////////////////////////////////////////////////////////////////
 
-    private void onItemMadeVisibleInternal(ControlBase itemRenderer, TModel model) {
+    private void onItemMadeVisibleInternal(TChildComponentTemplate itemRenderer, TModel model) {
         onItemMadeVisible(itemRenderer, model);
 
         fireItemMadeVisible(itemRenderer, model);
     }
 
-    protected void onItemMadeVisible(ControlBase itemRenderer, TModel model) {
+    protected void onItemMadeVisible(TChildComponentTemplate itemRenderer, TModel model) {
     }
 
-    private void fireItemMadeVisible(ControlBase itemRenderer, TModel model)
+    private void fireItemMadeVisible(TChildComponentTemplate itemRenderer, TModel model)
     {
-        for (final IItemMadeVisibleEventListener currentValueChangedEventListener : itemMadeVisibleEventListeners)
+        for (final IItemMadeVisibleEventListener<TModel, TChildComponentTemplate> currentValueChangedEventListener : itemMadeVisibleEventListeners)
         {
             try {
                 //noinspection unchecked
@@ -206,14 +216,14 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
         }
     }
 
-    private final List<IItemMadeVisibleEventListener> itemMadeVisibleEventListeners = Lists.newArrayList();
+    private final List<IItemMadeVisibleEventListener<TModel, TChildComponentTemplate>> itemMadeVisibleEventListeners = Lists.newArrayList();
 
     @SuppressWarnings("unused")
-    public void addOnFireItemMadeEventListener(IItemMadeVisibleEventListener listener) {
+    public void addOnFireItemMadeVisibleEventListener(IItemMadeVisibleEventListener<TModel, TChildComponentTemplate> listener) {
         itemMadeVisibleEventListeners.add(listener);
     }
     @SuppressWarnings("unused")
-    public void removeOnFireItemMadeEventListener(IItemMadeVisibleEventListener listener) {
+    public void removeOnFireItemMadeVisibleEventListener(IItemMadeVisibleEventListener<TModel, TChildComponentTemplate> listener) {
         itemMadeVisibleEventListeners.remove(listener);
     }
 }

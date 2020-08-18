@@ -5,8 +5,9 @@ import com.github.atomicblom.projecttable.client.mcgui.GuiLogger;
 import com.github.atomicblom.projecttable.client.mcgui.GuiRenderer;
 import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.events.IButtonPressedEventListener;
-import org.lwjgl.util.ReadablePoint;
-import org.lwjgl.util.Rectangle;
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
+import com.mojang.blaze3d.matrix.MatrixStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,19 +38,19 @@ public class ButtonControl extends ControlBase
     }
 
     @Override
-    public void draw()
+    public void draw(MatrixStack matrixStack)
     {
-        super.draw();
+        super.draw(matrixStack);
         if (isDisabled) {
-            getGuiRenderer().drawComponentTexture(this, disabledTexture);
+            getGuiRenderer().drawComponentTexture(matrixStack, this, disabledTexture);
         } else if (currentTexture != null)
         {
-            getGuiRenderer().drawComponentTexture(this, currentTexture);
+            getGuiRenderer().drawComponentTexture(matrixStack, this, currentTexture);
         }
     }
 
     @Override
-    protected boolean onMouseRelease(ReadablePoint point, int mouseButton)
+    protected boolean onMouseRelease(IReadablePoint point, int mouseButton)
     {
         if (!isDisabled && mouseButton == 0)
         {
@@ -61,7 +62,7 @@ public class ButtonControl extends ControlBase
     }
 
     @Override
-    protected boolean onMouseClick(ReadablePoint point, int mouseButton)
+    protected boolean onMouseClick(IReadablePoint point, int mouseButton)
     {
         if (!isDisabled && mouseButton == 0)
         {
@@ -96,7 +97,7 @@ public class ButtonControl extends ControlBase
         }
     }
 
-    private List<IButtonPressedEventListener> buttonPressedEventListeners = new ArrayList<IButtonPressedEventListener>();
+    private final List<IButtonPressedEventListener> buttonPressedEventListeners = new ArrayList<IButtonPressedEventListener>();
 
     @SuppressWarnings("unused")
     public void addOnButtonPressedEventListener(IButtonPressedEventListener listener) {

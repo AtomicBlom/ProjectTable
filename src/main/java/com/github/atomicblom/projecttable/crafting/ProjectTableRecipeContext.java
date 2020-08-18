@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.text.ITextComponent;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,7 +26,7 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
 {
     private final CraftingManager parent;
     private final ProjectTableManager projectTableManager;
-    private String label = null;
+    private ITextComponent label = null;
     private final List<IIngredient> ingredients = Lists.newArrayList();
     private String id = "unidentified";
     private String source = "fluent:no source specified";
@@ -38,7 +39,7 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
     }
 
     @Override
-    public ICraftingManagerIngredients withLabel(String label)
+    public ICraftingManagerIngredients withLabel(ITextComponent label)
     {
         this.label = label;
         return this;
@@ -203,7 +204,9 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
             }
         }
 
-        projectTableManager.addProjectTableRecipe(new ProjectTableRecipe(id, source, outputList, label, ingredients), true);
+        //Do not check for problems, as of 1.16+ version, recipes aren't available when this runs and needs to be deferred
+        // until the client connects to the server.
+        projectTableManager.addProjectTableRecipe(new ProjectTableRecipe(id, source, outputList, label, ingredients), true, false);
         return parent;
     }
 

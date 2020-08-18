@@ -1,92 +1,81 @@
 package com.github.atomicblom.projecttable.block;
 
-import com.github.atomicblom.projecttable.ProjectTableMod;
-import com.github.atomicblom.projecttable.gui.ModGUIs;
+import com.github.atomicblom.projecttable.inventory.ProjectTableContainer;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockHorizontal;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.state.BlockStateContainer;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.HorizontalBlock;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.container.INamedContainerProvider;
+import net.minecraft.inventory.container.SimpleNamedContainerProvider;
+import net.minecraft.item.BlockItemUseContext;
+import net.minecraft.state.StateContainer;
+import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.shapes.ISelectionContext;
+import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.shapes.VoxelShapes;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 
 /**
  * Created by codew on 4/01/2016.
  */
-public class ProjectTableBlock extends Block
+public class ProjectTableBlock extends HorizontalBlock
 {
+    private static final ITextComponent CONTAINER_NAME = new TranslationTextComponent("projecttable:container.projecttable");
 
-    public ProjectTableBlock() {
-
-        super(Material.WOOD);
-        setHarvestLevel("axe", 1);
-
-        setDefaultState(getDefaultState().withProperty(BlockHorizontal.FACING, EnumFacing.NORTH));
+    public ProjectTableBlock(Properties properties) {
+        super(properties);
+        setDefaultState(getDefaultState().with(HorizontalBlock.HORIZONTAL_FACING, Direction.NORTH));
 
     }
 
     @Override
-    protected BlockStateContainer createBlockState()
-    {
-        return new BlockStateContainer(this, BlockHorizontal.FACING);
+    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
+        builder.add(HORIZONTAL_FACING);
+    }
+
+    public BlockState getStateForPlacement(BlockItemUseContext context) {
+        return this.getDefaultState().with(HORIZONTAL_FACING, context.getPlacementHorizontalFacing().getOpposite());
+    }
+
+    final VoxelShape TableTop = blockBenchVoxelShape(0.5, 11, 0.5, 15, 2, 15);
+    final VoxelShape LegA = blockBenchVoxelShape(12.5, 0, 1.5, 2,  11, 2);
+    final VoxelShape LegB = blockBenchVoxelShape(1.5, 0, 1.5, 2, 11, 2);
+    final VoxelShape LegC = blockBenchVoxelShape(1.5, 0, 12.5, 2, 11, 2);
+    final VoxelShape LegD = blockBenchVoxelShape(12.5, 0, 12.5, 2, 11, 2);
+    final VoxelShape AABB = VoxelShapes.or(TableTop, LegA, LegB, LegC, LegD);
+
+    @Override
+    public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+        return AABB;
+    }
+
+    private VoxelShape blockBenchVoxelShape(double x, double y, double z, double width, double height, double depth) {
+        return Block.makeCuboidShape(x, y, z, x + width, y + height, z + depth);
     }
 
     @Override
-    public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack)
-    {
-        super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
-
-        final int orientation = (MathHelper.floor(placer.rotationYaw * 4.0f / 360.0f + 0.5)) & 3;
-        final EnumFacing horizontal = EnumFacing.byHorizontalIndex(orientation);
-        final IBlockState newState = worldIn.getBlockState(pos)
-                .withProperty(BlockHorizontal.FACING, horizontal);
-
-        worldIn.setBlockState(pos, newState, 0);
-    }
-
-    @Override
-    public int getMetaFromState(IBlockState state)
-    {
-        int meta = 0;
-        EnumFacing value = state.getValue(BlockHorizontal.FACING);
-        if (value == EnumFacing.UP || value == EnumFacing.DOWN) {
-            value = EnumFacing.NORTH;
+    @Deprecated
+    public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
+        if (worldIn.isRemote) {
+            return ActionResultType.SUCCESS;
+        } else {
+            player.openContainer(state.getContainer(worldIn, pos));
+            //player.addStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
+            //FIXME: Create Project Table Stat
+            return ActionResultType.CONSUME;
         }
-        meta |= value.ordinal() - 2;
-        return meta;
     }
 
     @Override
     @Deprecated
-    public IBlockState getStateFromMeta(int meta)
-    {
-        return super.getStateFromMeta(meta)
-                .withProperty(BlockHorizontal.FACING, EnumFacing.byHorizontalIndex(meta & 3));
-    }
-
-    @Override
-    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
-        playerIn.openGui(ProjectTableMod.instance, ModGUIs.PROJECT_TABLE.getID(), worldIn, pos.getX(), pos.getY(), pos.getZ());
-        return true;
-    }
-
-    @Override
-    @Deprecated
-    public boolean isFullCube(IBlockState state)
-    {
-        return false;
-    }
-
-    @Override
-    @Deprecated
-    public boolean isOpaqueCube(IBlockState state)
-    {
-        return false;
+    public INamedContainerProvider getContainer(BlockState state, World worldIn, BlockPos pos) {
+        return new SimpleNamedContainerProvider((id, playerInventory, playerEntity) -> new ProjectTableContainer(id, playerInventory), CONTAINER_NAME);
     }
 }

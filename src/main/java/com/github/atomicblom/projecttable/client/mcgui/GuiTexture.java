@@ -1,15 +1,15 @@
 package com.github.atomicblom.projecttable.client.mcgui;
 
+import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.util.ReadableRectangle;
-import org.lwjgl.util.Rectangle;
 
 public class GuiTexture
 {
     private final ResourceLocation textureLocation;
     private final int width;
     private final int height;
-    private final ReadableRectangle bounds;
+    private final IReadableRectangle bounds;
 
     public GuiTexture(ResourceLocation textureLocation, int width, int height)
     {
@@ -24,7 +24,7 @@ public class GuiTexture
         return textureLocation;
     }
 
-    public ReadableRectangle getBounds() {
+    public IReadableRectangle getBounds() {
         return bounds;
     }
 

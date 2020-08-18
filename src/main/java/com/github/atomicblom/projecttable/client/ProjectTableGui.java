@@ -12,46 +12,51 @@ import com.github.atomicblom.projecttable.client.mcgui.controls.CheckboxControl;
 import com.github.atomicblom.projecttable.client.mcgui.controls.ScrollPaneControl;
 import com.github.atomicblom.projecttable.client.mcgui.controls.ScrollbarControl;
 import com.github.atomicblom.projecttable.client.mcgui.controls.TexturedPaneControl;
-import com.github.atomicblom.projecttable.client.mcgui.events.ICheckboxPressedEventListener;
-import com.github.atomicblom.projecttable.client.mcgui.events.IItemMadeVisibleEventListener;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
 import com.github.atomicblom.projecttable.client.model.ProjectTableRecipeInstance;
-import com.github.atomicblom.projecttable.gui.events.IRecipeCraftingEventListener;
 import com.github.atomicblom.projecttable.inventory.ProjectTableContainer;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
-import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.InventoryPlayer;
+import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.util.Rectangle;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ProjectTableGui extends McGUI
+public class ProjectTableGui extends McGUI<ProjectTableContainer>
 {
+    private static final ITextComponent showOnlyCraftableComponentText = new TranslationTextComponent("gui.projecttable:project_table.show_only_craftable");
     private static final String LOCATION = "textures/gui/";
     private static final String FILE_EXTENSION = ".png";
 
     private final GuiTexture guiTexture = new GuiTexture(getResourceLocation("sscraftingtablegui"), 384, 384);
-    private final InventoryPlayer playerInventory;
+    private final PlayerInventory playerInventory;
     private int timesInventoryChanged;
-    private GuiTextField searchField = null;
+    private TextFieldWidget searchField = null;
     private Collection<ProjectTableRecipeInstance> recipeList;
     private final List<ProjectTableRecipeInstance> filteredList;
-    private ScrollPaneControl recipeListGuiComponent = null;
+    private ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl> recipeListGuiComponent = null;
     private ScrollbarControl scrollbarGuiComponent = null;
     private GuiRenderer guiRenderer;
-    private static boolean showOnlyCraftable = true;
+    private boolean showOnlyCraftable = false;
     private CheckboxControl showOnlyCraftableComponent;
 
-    public ProjectTableGui(InventoryPlayer playerInventory) {
-        super(new ProjectTableContainer(playerInventory));
+
+
+    public ProjectTableGui(ProjectTableContainer screenContainer, PlayerInventory inv, ITextComponent title) {
+        super(screenContainer, inv, title);
+
+        xSize = 318;
+        ySize = 227;
+
         recipeList = Lists.newArrayList();
         filteredList = Lists.newArrayList();
-        this.playerInventory = playerInventory;
+        this.playerInventory = screenContainer.getPlayerInventory();
         this.timesInventoryChanged = playerInventory.getTimesChanged();
     }
 
@@ -71,22 +76,23 @@ public class ProjectTableGui extends McGUI
     }
 
     @Override
-    public void initGui()
+    public void init()
     {
-        xSize = 175;
-        ySize = 227;
-        super.initGui();
-        xSize = 317;
-        ySize = 227;
+        //xSize = 175;
+        //ySize = 227;
+        super.init();
+        //xSize = 317;
+        //ySize = 227;
 
         createRecipeList();
 
-        searchField = new GuiTextField(0, fontRenderer, guiLeft + 9 - (317 - 175) / 2, guiTop + 9, 149, fontRenderer.FONT_HEIGHT);
+        //searchField = new TextFieldWidget(font, guiLeft + 9 - (317 - 175) / 2, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
+        searchField = new TextFieldWidget(font, guiLeft + 9, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
         searchField.setMaxStringLength(60);
         searchField.setEnableBackgroundDrawing(false);
         searchField.setVisible(true);
         searchField.setTextColor(16777215);
-        searchField.setFocused(true);
+        searchField.setFocused2(true);
 
         createComponents();
 
@@ -96,23 +102,9 @@ public class ProjectTableGui extends McGUI
     private void createRecipeList() {
 
         Collection<ProjectTableRecipe> recipes = Lists.newArrayList(ProjectTableManager.INSTANCE.getRecipes());
-        //Copy the Player inventory to guard against changes.
-        InventoryPlayer inventoryCopy = new InventoryPlayer(playerInventory.player);
-        inventoryCopy.copyInventory(playerInventory);
-        //Temporary Item List:
-
-        this.recipeList = recipes.parallelStream().map((recipe) -> {
-                    ProjectTableRecipeInstance recipeInstance = new ProjectTableRecipeInstance(recipe);
-
-                    final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipe, inventoryCopy);
-
-                    recipeInstance.setCanCraft(canCraft);
-                    //FIXME: Implement this when we support GameStages or something similar.
-                    recipeInstance.setIsLocked(false);
-
-                    return recipeInstance;
-                })
-                .sorted((a, b) -> a.getRecipe().getDisplayName().compareToIgnoreCase(b.getRecipe().getDisplayName()))
+        this.recipeList = recipes.parallelStream()
+                .map(ProjectTableRecipeInstance::new)
+                .sorted((a, b) -> a.getRecipe().getDisplayName().toString().compareToIgnoreCase(b.getRecipe().getDisplayName().toString()))
                 .sequential()
                 .collect(Collectors.toList());
 
@@ -121,27 +113,43 @@ public class ProjectTableGui extends McGUI
 
     private void createFilteredList()
     {
-
         String text = searchField != null ? searchField.getText() : "";
         filteredList.clear();
 
         final String searchText = text.toLowerCase();
 
+        //Copy the Player inventory to guard against changes.
+        PlayerInventory inventoryCopy = new PlayerInventory(playerInventory.player);
+        inventoryCopy.copyInventory(playerInventory);
+
         synchronized (filteredList) {
-            this.recipeList.parallelStream().filter(f ->
-                    (!showOnlyCraftable || f.canCraft()) &&
-                            !f.isLocked() &&
-                            (searchText.isEmpty() || f.getRecipe().getDisplayName().toLowerCase().contains(searchText))
-            )
-            .sorted((a, b) -> a.getRecipe().getDisplayName().compareToIgnoreCase(b.getRecipe().getDisplayName()))
-            .sequential()
-            .collect(Collectors.toCollection(() -> filteredList));
+            this.recipeList.parallelStream()
+                .map(r -> updateRecipeInstance(r, inventoryCopy))
+                .filter(f -> filterRecipeInstance(f, searchText))
+                .sorted((a, b) -> a.getRecipe().getDisplayName().getString().compareToIgnoreCase(b.getRecipe().getDisplayName().toString()))
+                .sequential()
+                .collect(Collectors.toCollection(() -> filteredList));
         }
+    }
+
+    private ProjectTableRecipeInstance updateRecipeInstance(ProjectTableRecipeInstance recipeInstance, PlayerInventory inventoryCopy) {
+        final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipeInstance.getRecipe(), inventoryCopy);
+        recipeInstance.setCanCraft(canCraft);
+
+        //FIXME: Implement this when we support GameStages or something similar.
+        recipeInstance.setIsLocked(false);
+        return recipeInstance;
+    }
+
+    private boolean filterRecipeInstance(ProjectTableRecipeInstance f, String searchText) {
+        return (!showOnlyCraftable || f.canCraft()) &&
+                !f.isLocked() &&
+                (searchText.isEmpty() || f.getRecipe().getDisplayName().getString().toLowerCase().contains(searchText));
     }
 
     protected void createComponents()
     {
-        guiRenderer = new GuiRenderer(mc, mc.getTextureManager(), fontRenderer, itemRender);
+        guiRenderer = new GuiRenderer(this);
 
         final GuiTexture guiBackground = new GuiSubTexture(guiTexture, new Rectangle(0, 0, 317, 227));
         final GuiTexture inactiveHandle = new GuiSubTexture(guiTexture, new Rectangle(318, 0, 12, 15));
@@ -164,7 +172,6 @@ public class ProjectTableGui extends McGUI
         showOnlyCraftableComponent.setLocation(164, 8);
         showOnlyCraftableComponent.setSize(12, 12);
         showOnlyCraftableComponent.setValue(showOnlyCraftable);
-        showOnlyCraftableComponent.addOnButtonPressedEventListener(new ShowOnlyCraftableEventListener());
 
         final ProjectTableRecipeControl templateRecipeControl = new ProjectTableRecipeControl(guiRenderer, craftableSubtexture, uncraftableSubtexture);
         recipeListGuiComponent = new ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl>(guiRenderer, 330, 23*5)
@@ -178,37 +185,45 @@ public class ProjectTableGui extends McGUI
         addChild(scrollbarGuiComponent);
         addChild(showOnlyCraftableComponent);
 
-        templateRecipeControl.addOnRecipeCraftingEventListener(new RecipeCraftingEventListener());
-        recipeListGuiComponent.addOnFireItemMadeEventListener(new RecipeMadeVisibleEventListener());
+        templateRecipeControl.addOnRecipeCraftingEventListener(this::craftRecipe);
+        showOnlyCraftableComponent.addOnButtonPressedEventListener((button, value) -> {
+            showOnlyCraftable = value;
+            createFilteredList();
+        });
+        recipeListGuiComponent.addOnFireItemMadeVisibleEventListener((scrollPaneControl, projectTableRecipeControl, projectTableRecipe) -> {
+            final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(projectTableRecipe.getRecipe(), playerInventory);
+            projectTableRecipe.setCanCraft(canCraft);
+        });
         timesInventoryChanged = playerInventory.getTimesChanged();
     }
 
     @Override
-    public void updateScreen() {
-        super.updateScreen();
+    public void tick() {
+        super.tick();
 
         if (playerInventory.getTimesChanged() != timesInventoryChanged) {
             timesInventoryChanged = playerInventory.getTimesChanged();
-            createRecipeList();
+            createFilteredList();
         }
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseZ)
+    protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseZ)
     {
-        fontRenderer.drawString(I18n.format("gui.projecttable:project_table.show_only_craftable"), 105, 10, 0x404040);
+        font.func_238407_a_(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
     }
 
     protected void setRecipeRenderText()
     {
+        //FIXME: we can probably defer this until the element is displayed.
         for (final ProjectTableRecipeInstance recipeInstance : recipeList)
         {
             final ProjectTableRecipe projectTableRecipe = recipeInstance.getRecipe();
             if (projectTableRecipe.getRenderText() == null) {
-                String proposedName = projectTableRecipe.getDisplayName();
+                String proposedName = projectTableRecipe.getDisplayName().toString();
 
-                if (fontRenderer.getStringWidth(proposedName) > 64) {
-                    while (fontRenderer.getStringWidth(proposedName + "...") > 64) {
+                if (font.getStringWidth(proposedName) > 64) {
+                    while (font.getStringWidth(proposedName + "...") > 64) {
                         proposedName = proposedName.substring(0, proposedName.length() - 2);
                     }
                     proposedName += "...";
@@ -220,58 +235,37 @@ public class ProjectTableGui extends McGUI
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-        super.drawGuiContainerBackgroundLayer(partialTicks, mouseX, mouseY);
-        searchField.drawTextBox();
+    protected void drawGuiContainerBackgroundLayer(MatrixStack matrixStack, float partialTicks, int mouseX, int mouseY) {
+        super.drawGuiContainerBackgroundLayer(matrixStack, partialTicks, mouseX, mouseY);
+        searchField.render(matrixStack, mouseX, mouseY, partialTicks);
         guiRenderer.notifyTextureChanged();
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (!checkHotbarKeys(keyCode))
-        {
-            if (searchField.textboxKeyTyped(typedChar, keyCode))
+    public boolean charTyped(char typedChar, int keyCode) {
+        //if (!this.func_195363_d(typedChar, keyCode)) //checkHotbar...
+        //{
+            if (searchField.charTyped(typedChar, keyCode))
             {
                 createFilteredList();
             }
             else
             {
-                super.keyTyped(typedChar, keyCode);
+                return super.charTyped(typedChar, keyCode);
             }
-        }
+        //}
+        return true;
     }
 
     private void craftRecipe(ProjectTableRecipe recipe) {
         ProjectTableMod.network.sendToServer(new ProjectTableCraftPacket(recipe));
         ProjectTableManager.INSTANCE.craftRecipe(recipe, playerInventory);
-        this.timesInventoryChanged = playerInventory.getTimesChanged();
-    }
 
-    private class RecipeCraftingEventListener implements IRecipeCraftingEventListener
-    {
-        @Override
-        public void onRecipeCrafting(ProjectTableRecipe recipe)
-        {
-            craftRecipe(recipe);
-        }
-    }
-
-    private class ShowOnlyCraftableEventListener implements ICheckboxPressedEventListener
-    {
-        @Override
-        public void onCheckboxPressed(CheckboxControl button, boolean value) {
-            showOnlyCraftable = value;
-            createFilteredList();
-        }
-    }
-
-    private class RecipeMadeVisibleEventListener implements IItemMadeVisibleEventListener<ProjectTableRecipeInstance, ProjectTableRecipeControl>
-    {
-        @Override
-        public void onItemMadeVisible(ScrollPaneControl scrollPaneControl, ProjectTableRecipeControl projectTableRecipeControl, ProjectTableRecipeInstance projectTableRecipe)
-        {
-            final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(projectTableRecipe.getRecipe(), playerInventory);
-            projectTableRecipe.setCanCraft(canCraft);
-        }
+        //Can probably just remove this.
+//        for (ProjectTableRecipeInstance projectTableRecipe : this.recipeListGuiComponent.getVisibleItems()) {
+//            final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(projectTableRecipe.getRecipe(), playerInventory);
+//            projectTableRecipe.setCanCraft(canCraft);
+//        }
+        //this.timesInventoryChanged = playerInventory.getTimesChanged();
     }
 }

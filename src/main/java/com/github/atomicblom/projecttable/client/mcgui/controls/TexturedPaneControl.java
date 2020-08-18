@@ -3,7 +3,8 @@ package com.github.atomicblom.projecttable.client.mcgui.controls;
 import com.github.atomicblom.projecttable.client.mcgui.ControlBase;
 import com.github.atomicblom.projecttable.client.mcgui.GuiRenderer;
 import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
-import org.lwjgl.util.Rectangle;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
+import com.mojang.blaze3d.matrix.MatrixStack;
 
 public class TexturedPaneControl extends ControlBase
 {
@@ -22,9 +23,9 @@ public class TexturedPaneControl extends ControlBase
     }
 
     @Override
-    public void draw()
+    public void draw(MatrixStack matrixStack)
     {
-        getGuiRenderer().drawComponentTexture(this, texture);
-        super.draw();
+        getGuiRenderer().drawComponentTexture(matrixStack, this, texture);
+        super.draw(matrixStack);
     }
 }

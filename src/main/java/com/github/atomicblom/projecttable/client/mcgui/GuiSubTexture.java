@@ -1,6 +1,6 @@
 package com.github.atomicblom.projecttable.client.mcgui;
 
-import org.lwjgl.util.Rectangle;
+import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
 
 public class GuiSubTexture extends GuiTexture {
 

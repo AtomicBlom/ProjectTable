@@ -1,21 +1,21 @@
 package com.github.atomicblom.projecttable.networking;
 
+import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.network.NetworkEvent;
 
-public class ProjectTableCraftPacket implements IMessage
+import java.util.function.Supplier;
+
+public class ProjectTableCraftPacket
 {
-    private ProjectTableRecipe recipe;
+    private final ProjectTableRecipe recipe;
 
-    public ProjectTableCraftPacket()
-    {
-    }
-
-    @SideOnly(Side.CLIENT)
     public ProjectTableCraftPacket(ProjectTableRecipe recipe)
     {
         this.recipe = recipe;
@@ -25,15 +25,29 @@ public class ProjectTableCraftPacket implements IMessage
         return recipe;
     }
 
-    @Override
-    public void fromBytes(ByteBuf buf)
-    {
-        recipe = ProjectTableRecipe.readFromBuffer(new PacketBuffer(buf));
-    }
-
-    @Override
-    public void toBytes(ByteBuf buf)
+    public void serialize(ByteBuf buf)
     {
         recipe.writeToBuffer(new PacketBuffer(buf));
+    }
+
+    public static ProjectTableCraftPacket deserialize(ByteBuf buf)
+    {
+        return new ProjectTableCraftPacket(ProjectTableRecipe.readFromBuffer(new PacketBuffer(buf)));
+    }
+
+    public static void received(final ProjectTableCraftPacket message, final Supplier<NetworkEvent.Context> ctx)
+    {
+        ServerPlayerEntity sender = ctx.get().getSender();
+        final PlayerInventory playerInventory = sender.inventory;
+        final ProjectTableRecipe recipe = message.getRecipe();
+
+        final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipe, playerInventory);
+        if (!canCraft) {
+            return;
+        }
+
+        ctx.get().enqueueWork(() -> {
+            ProjectTableManager.INSTANCE.craftRecipe(recipe, playerInventory);
+        });
     }
 }

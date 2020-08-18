@@ -6,12 +6,12 @@ import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.NBTUtil;
-import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.registries.RegistryManager;
 
 import javax.annotation.Nullable;
@@ -26,10 +26,10 @@ public enum ProjectTableManager
 {
     INSTANCE;
 
-    private List<ProjectTableRecipe> recipes = Lists.newArrayList();
-    private List<ProjectTableRecipe> initialSet = Lists.newArrayList();
+    private final List<ProjectTableRecipe> recipes = Lists.newArrayList();
+    private final List<ProjectTableRecipe> initialSet = Lists.newArrayList();
 
-    public void addProjectTableRecipe(ProjectTableRecipe recipe, boolean isInitialSet) {
+    public void addProjectTableRecipe(ProjectTableRecipe recipe, boolean isDefaultSet, boolean checkForProblems) {
         List<IngredientProblem> problems = Lists.newArrayList();
         for (ItemStack itemStack : recipe.output) {
             if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(itemStack.getItem()) || itemStack.isEmpty()) {
@@ -37,10 +37,12 @@ public enum ProjectTableManager
             }
         }
 
-        for (IIngredient ingredient : recipe.input) {
+        if (checkForProblems) {
+            for (IIngredient ingredient : recipe.input) {
             IngredientProblem ingredientProblem = ingredient.assertValid(recipe.getId(), recipe.getSource());
-            if (ingredientProblem != null) {
-                problems.add(ingredientProblem);
+                if (ingredientProblem != null) {
+                    problems.add(ingredientProblem);
+                }
             }
         }
         if (!problems.isEmpty()) {
@@ -48,12 +50,12 @@ public enum ProjectTableManager
         }
 
         recipes.add(recipe);
-        if (isInitialSet) {
+        if (isDefaultSet) {
             initialSet.add(recipe);
         }
     }
 
-    public boolean canCraftRecipe(ProjectTableRecipe recipe, InventoryPlayer playerInventory)
+    public boolean canCraftRecipe(ProjectTableRecipe recipe, PlayerInventory playerInventory)
     {
         final List<ItemStack> compactedInventoryItems = getCompactedInventoryItems(playerInventory);
 
@@ -68,12 +70,14 @@ public enum ProjectTableManager
                 for (final ItemStack playerItem : compactedInventoryItems) {
                     if (durabilityRequired > 0) { //Item is damageable, ignore metadata, take into account durability
                         if (recipeInput.getItem() == playerItem.getItem() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
-                            durabilityRequired -= (recipeInput.getMaxDamage() - recipeInput.getItemDamage());
+                            durabilityRequired -= (recipeInput.getMaxDamage() - recipeInput.getDamage());
                             itemMatched = true;
                             itemsAvailable += playerItem.getCount();
                         }
                     } else {
-                        if (recipeInput.getItem() == playerItem.getItem() && recipeInput.getMetadata() == playerItem.getMetadata() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
+                        //FIXME: Adjust for Tags
+                        //if (recipeInput.getItem() == playerItem.getItem() && recipeInput.getMetadata() == playerItem.getMetadata() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
+                        if (recipeInput.getItem() == playerItem.getItem() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
                             itemMatched = true;
                             itemsAvailable += playerItem.getCount();
                         }
@@ -89,7 +93,7 @@ public enum ProjectTableManager
         return true;
     }
 
-    private List<ItemStack> getCompactedInventoryItems(InventoryPlayer inventorySlots) {
+    private List<ItemStack> getCompactedInventoryItems(PlayerInventory inventorySlots) {
         List<ItemStack> usableItems = Lists.newArrayList();
 
         Stream<ItemStack> stream = Stream.concat(inventorySlots.mainInventory.stream(), Stream.of(inventorySlots.getItemStack()));
@@ -102,7 +106,9 @@ public enum ProjectTableManager
 
             boolean itemMatched = false;
             for (final ItemStack existingItemStack : usableItems) {
-                if (existingItemStack.getItem() == itemStack.getItem() && existingItemStack.getMetadata() == itemStack.getMetadata() && ItemStack.areItemStackTagsEqual(existingItemStack, itemStack))
+                //FIXME: Adjust for tags
+                //if (existingItemStack.getItem() == itemStack.getItem() && existingItemStack.getMetadata() == itemStack.getMetadata() && ItemStack.areItemStackTagsEqual(existingItemStack, itemStack))
+                if (existingItemStack.getItem() == itemStack.getItem() && ItemStack.areItemStackTagsEqual(existingItemStack, itemStack))
                 {
                     itemMatched = true;
                     existingItemStack.grow(itemStack.getCount());
@@ -131,7 +137,7 @@ public enum ProjectTableManager
         ProjectTableMod.logger.info("Reset client recipe list to {} entries", initialSet.size());
     }
 
-    public void craftRecipe(ProjectTableRecipe recipe, InventoryPlayer playerInventory) {
+    public void craftRecipe(ProjectTableRecipe recipe, PlayerInventory playerInventory) {
         for (final IIngredient ingredient : recipe.getInput())
         {
             int quantityToConsume = ingredient.getQuantityConsumed();
@@ -139,8 +145,9 @@ public enum ProjectTableManager
             final ImmutableList<ItemStack> itemStacks = ingredient.getItemStacks();
             for (final ItemStack itemStack : itemStacks)
             {
-                int metadata = itemStack.getMetadata();
-                metadata = metadata == OreDictionary.WILDCARD_VALUE ? -1 : metadata;
+                //FIXME: Adjust for tags
+                //int metadata = itemStack.getMetadata();
+                //metadata = metadata == OreDictionary.WILDCARD_VALUE ? -1 : metadata;
 
                 if (ingredient.isFluidContainer()) {
                     //TODO
@@ -151,12 +158,14 @@ public enum ProjectTableManager
                 }
 
                 if (durabilityToConsume > 0) {
-                    durabilityToConsume -= clearMatchingDurability(playerInventory, itemStack.getItem(), durabilityToConsume, itemStack.getTagCompound());
+                    durabilityToConsume -= clearMatchingDurability(playerInventory, itemStack.getItem(), durabilityToConsume, itemStack.getTag());
                     playerInventory.markDirty();
                 }
 
                 if (quantityToConsume > 0) {
-                    quantityToConsume -= playerInventory.clearMatchingItems(itemStack.getItem(), metadata, quantityToConsume, itemStack.getTagCompound());
+                    quantityToConsume -= ItemStackHelper.func_233534_a_(playerInventory, itemStack1 -> itemStack1.isItemEqual(itemStack), quantityToConsume, false);
+                    //playerInventory.func_234564_a_(itemStack1 -> itemStack1.isItemEqual(itemStack), quantityToConsume, playerInventory);
+                    //quantityToConsume -= playerInventory.clearMatchingItems(itemStack.getItem(), metadata, quantityToConsume, itemStack.getTag());
                     playerInventory.markDirty();
                 }
             }
@@ -177,7 +186,7 @@ public enum ProjectTableManager
         }
     }
 
-    private int clearMatchingDurability(InventoryPlayer playerInventory, @Nullable Item itemIn, int durability, @Nullable NBTTagCompound itemNBT)
+    private int clearMatchingDurability(PlayerInventory playerInventory, @Nullable Item itemIn, int durability, @Nullable CompoundNBT itemNBT)
     {
         if (durability <= 0) return 0;
 
@@ -187,12 +196,12 @@ public enum ProjectTableManager
         {
             ItemStack itemstack = playerInventory.getStackInSlot(j);
 
-            if (!itemstack.isEmpty() && (itemIn == null || itemstack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, itemstack.getTagCompound(), true)))
+            if (!itemstack.isEmpty() && (itemIn == null || itemstack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, itemstack.getTag(), true)))
             {
-                int thisItemDurabilityToRemove = Math.min(durability - durabilityConsumed, itemstack.getMaxDamage() - itemstack.getItemDamage() + 1);
+                int thisItemDurabilityToRemove = Math.min(durability - durabilityConsumed, itemstack.getMaxDamage() - itemstack.getDamage() + 1);
                 durabilityConsumed += thisItemDurabilityToRemove;
 
-                itemstack.damageItem(thisItemDurabilityToRemove, playerInventory.player);
+                itemstack.damageItem(thisItemDurabilityToRemove, playerInventory.player, (t) -> {});
 
                 if (durabilityConsumed >= durability)
                 {
@@ -202,12 +211,12 @@ public enum ProjectTableManager
         }
 
         ItemStack mouseHeldItemStack = playerInventory.getItemStack();
-        if (!mouseHeldItemStack.isEmpty() && (itemIn == null || mouseHeldItemStack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, mouseHeldItemStack.getTagCompound(), true)))
+        if (!mouseHeldItemStack.isEmpty() && (itemIn == null || mouseHeldItemStack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, mouseHeldItemStack.getTag(), true)))
         {
-            int heldItemDurabilityToRemove = Math.min(durability - durabilityConsumed, mouseHeldItemStack.getMaxDamage() - mouseHeldItemStack.getItemDamage());
+            int heldItemDurabilityToRemove = Math.min(durability - durabilityConsumed, mouseHeldItemStack.getMaxDamage() - mouseHeldItemStack.getDamage());
             durabilityConsumed += heldItemDurabilityToRemove;
 
-            mouseHeldItemStack.damageItem(heldItemDurabilityToRemove, playerInventory.player);
+            mouseHeldItemStack.damageItem(heldItemDurabilityToRemove, playerInventory.player, (t) -> {});
             playerInventory.setItemStack(mouseHeldItemStack);
 
             if (durabilityConsumed >= durability) {
