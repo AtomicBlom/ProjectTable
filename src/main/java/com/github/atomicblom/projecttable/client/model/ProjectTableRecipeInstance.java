@@ -9,13 +9,14 @@ public class ProjectTableRecipeInstance
 {
 
     private final ProjectTableRecipe recipe;
+    private final String recipeName;
     private boolean canCraft;
     private boolean isLocked;
 
     public ProjectTableRecipeInstance(ProjectTableRecipe recipe)
     {
-
         this.recipe = recipe;
+        this.recipeName = recipe != null ? recipe.getDisplayName().getString() : "";
     }
 
     public ProjectTableRecipe getRecipe()
@@ -39,5 +40,9 @@ public class ProjectTableRecipeInstance
 
     public boolean isLocked() {
         return isLocked;
+    }
+
+    public String getRecipeName() {
+        return recipeName;
     }
 }

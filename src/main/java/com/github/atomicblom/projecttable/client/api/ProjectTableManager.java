@@ -145,10 +145,6 @@ public enum ProjectTableManager
             final ImmutableList<ItemStack> itemStacks = ingredient.getItemStacks();
             for (final ItemStack itemStack : itemStacks)
             {
-                //FIXME: Adjust for tags
-                //int metadata = itemStack.getMetadata();
-                //metadata = metadata == OreDictionary.WILDCARD_VALUE ? -1 : metadata;
-
                 if (ingredient.isFluidContainer()) {
                     //TODO
                 }

@@ -19,13 +19,16 @@ import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.util.InputMappings;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemGroup;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ProjectTableGui extends McGUI<ProjectTableContainer>
@@ -95,7 +98,6 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         createComponents();
 
         createRecipeList();
-        setRecipeRenderText();
     }
 
     private void createRecipeList() {
@@ -103,7 +105,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         Collection<ProjectTableRecipe> recipes = Lists.newArrayList(ProjectTableManager.INSTANCE.getRecipes());
         this.recipeList = recipes.parallelStream()
                 .map(ProjectTableRecipeInstance::new)
-                .sorted((a, b) -> a.getRecipe().getDisplayName().toString().compareToIgnoreCase(b.getRecipe().getDisplayName().toString()))
+                .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
                 .collect(Collectors.toList());
 
@@ -125,7 +127,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
             this.recipeList.parallelStream()
                 .map(r -> updateRecipeInstance(r, inventoryCopy))
                 .filter(f -> filterRecipeInstance(f, searchText))
-                .sorted((a, b) -> a.getRecipe().getDisplayName().getString().compareToIgnoreCase(b.getRecipe().getDisplayName().toString()))
+                .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
                 .collect(Collectors.toCollection(() -> filteredList));
         }
@@ -143,7 +145,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     private boolean filterRecipeInstance(ProjectTableRecipeInstance f, String searchText) {
         return (!showOnlyCraftable || f.canCraft()) &&
                 !f.isLocked() &&
-                (searchText.isEmpty() || f.getRecipe().getDisplayName().getString().toLowerCase().contains(searchText));
+                (searchText.isEmpty() || f.getRecipeName().toLowerCase().contains(searchText));
     }
 
     protected void createComponents()
@@ -190,8 +192,11 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
             createFilteredList();
         });
         recipeListGuiComponent.addOnFireItemMadeVisibleEventListener((scrollPaneControl, projectTableRecipeControl, projectTableRecipe) -> {
+            if (projectTableRecipe == null) return;
+
             final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(projectTableRecipe.getRecipe(), playerInventory);
             projectTableRecipe.setCanCraft(canCraft);
+            setRecipeRenderText(projectTableRecipe);
         });
         timesInventoryChanged = playerInventory.getTimesChanged();
     }
@@ -212,25 +217,22 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         font.func_238407_a_(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
     }
 
-    protected void setRecipeRenderText()
+    protected void setRecipeRenderText(ProjectTableRecipeInstance recipeInstance)
     {
-        //FIXME: we can probably defer this until the element is displayed.
-        for (final ProjectTableRecipeInstance recipeInstance : recipeList)
-        {
-            final ProjectTableRecipe projectTableRecipe = recipeInstance.getRecipe();
-            if (projectTableRecipe.getRenderText() == null) {
-                String proposedName = projectTableRecipe.getDisplayName().toString();
+        final ProjectTableRecipe projectTableRecipe = recipeInstance.getRecipe();
+        if (projectTableRecipe.getRenderText() == null) {
+            String proposedName = projectTableRecipe.getDisplayName().toString();
 
-                if (font.getStringWidth(proposedName) > 64) {
-                    while (font.getStringWidth(proposedName + "...") > 64) {
-                        proposedName = proposedName.substring(0, proposedName.length() - 2);
-                    }
-                    proposedName += "...";
+            if (font.getStringWidth(proposedName) > 64) {
+                while (font.getStringWidth(proposedName + "...") > 64) {
+                    proposedName = proposedName.substring(0, proposedName.length() - 2);
                 }
-
-                projectTableRecipe.setRenderText(proposedName);
+                proposedName += "...";
             }
+
+            projectTableRecipe.setRenderText(proposedName);
         }
+
     }
 
     @Override
@@ -241,30 +243,35 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     }
 
     @Override
-    public boolean charTyped(char typedChar, int keyCode) {
-        //if (!this.func_195363_d(typedChar, keyCode)) //checkHotbar...
-        //{
-            if (searchField.charTyped(typedChar, keyCode))
-            {
+    public boolean charTyped(char codePoint, int modifiers) {
+        String s = this.searchField.getText();
+        if (this.searchField.charTyped(codePoint, modifiers)) {
+            if (!Objects.equals(s, this.searchField.getText())) {
                 createFilteredList();
             }
-            else
-            {
-                return super.charTyped(typedChar, keyCode);
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        String s = this.searchField.getText();
+        if (this.searchField.keyPressed(keyCode, scanCode, modifiers)) {
+            if (!Objects.equals(s, this.searchField.getText())) {
+                createFilteredList();
             }
-        //}
-        return true;
+
+            return true;
+        } else {
+            return this.searchField.isFocused() && this.searchField.getVisible() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
+        }
     }
 
     private void craftRecipe(ProjectTableRecipe recipe) {
         ProjectTableMod.network.sendToServer(new ProjectTableCraftPacket(recipe));
         ProjectTableManager.INSTANCE.craftRecipe(recipe, playerInventory);
-
-        //Can probably just remove this.
-//        for (ProjectTableRecipeInstance projectTableRecipe : this.recipeListGuiComponent.getVisibleItems()) {
-//            final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(projectTableRecipe.getRecipe(), playerInventory);
-//            projectTableRecipe.setCanCraft(canCraft);
-//        }
-        //this.timesInventoryChanged = playerInventory.getTimesChanged();
     }
 }
