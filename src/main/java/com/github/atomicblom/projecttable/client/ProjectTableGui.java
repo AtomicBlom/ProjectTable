@@ -84,8 +84,6 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         //xSize = 317;
         //ySize = 227;
 
-        createRecipeList();
-
         //searchField = new TextFieldWidget(font, guiLeft + 9 - (317 - 175) / 2, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
         searchField = new TextFieldWidget(font, guiLeft + 9, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
         searchField.setMaxStringLength(60);
@@ -96,6 +94,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
 
         createComponents();
 
+        createRecipeList();
         setRecipeRenderText();
     }
 

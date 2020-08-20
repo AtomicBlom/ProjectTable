@@ -11,7 +11,7 @@ import java.io.File;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ProjectTableConfig {
     public static class Common {
-        //public final ForgeConfigSpec.BooleanValue loadCraftingTableRecipes;
+        public final ForgeConfigSpec.BooleanValue loadCraftingTableRecipes;
         public final ForgeConfigSpec.BooleanValue useExampleVanillaRecipes;
         public final ForgeConfigSpec.BooleanValue useDevRecipes;
 
@@ -19,13 +19,13 @@ public class ProjectTableConfig {
             builder.comment("Server configuration settings")
                     .push("server");
 
-            /* TODO: add support for reading from the crafting table as well.
+            // TODO: add support for reading from the crafting table as well.
             loadCraftingTableRecipes = builder
                     .comment("Causes any recipes from the normal crafting table to be made available in the table")
                     .translation("projecttable.configgui.loadCraftingTableRecipes")
                     .worldRestart()
                     .define("loadCraftingTableRecipes", false);
-            */
+
 
             useExampleVanillaRecipes = builder
                     .comment("Loads an example set of bulk recipes appropriate for Vanilla")
@@ -60,7 +60,7 @@ public class ProjectTableConfig {
     @SubscribeEvent
     public static void onLoad(final ModConfig.Loading configEvent) {
         ProjectTableMod.logger.debug("Loaded project table config file {}", configEvent.getConfig().getFileName());
-        CONFIG_DIR =  configEvent.getConfig().getFullPath().toFile();
+        CONFIG_DIR =  configEvent.getConfig().getFullPath().getParent().toFile();
     }
 
     @SubscribeEvent

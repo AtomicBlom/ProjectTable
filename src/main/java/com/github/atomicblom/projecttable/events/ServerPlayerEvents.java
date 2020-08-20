@@ -1,5 +1,6 @@
 package com.github.atomicblom.projecttable.events;
 
+import com.github.atomicblom.projecttable.ProjectTableConfig;
 import com.github.atomicblom.projecttable.ProjectTableMod;
 import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
@@ -20,7 +21,7 @@ public class ServerPlayerEvents {
             ServerPlayerEntity playerEntity = (ServerPlayerEntity)event.getPlayer();
             Collection<ProjectTableRecipe> recipes = ProjectTableManager.INSTANCE.getRecipes();
             ProjectTableMod.logger.info("Sending {} recipes list to client", recipes.size());
-            ProjectTableMod.network.send(PacketDistributor.PLAYER.with(() -> playerEntity), new ReplaceProjectTableRecipesPacket(recipes));
+            ProjectTableMod.network.send(PacketDistributor.PLAYER.with(() -> playerEntity), new ReplaceProjectTableRecipesPacket(recipes, ProjectTableConfig.COMMON.loadCraftingTableRecipes.get()));
         }
     }
 }
