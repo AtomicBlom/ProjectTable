@@ -90,8 +90,8 @@ public abstract class McGUI<T extends Container> extends ContainerScreen<T>
     public boolean mouseDragged(double mouseX, double mouseY, int mouseButtons, double dragDeltaX, double dragDeltaZ) {
         Point dragDelta = new Point((int) dragDeltaX, (int) dragDeltaZ);
 
-        return super.mouseDragged(mouseX, mouseY, mouseButtons, dragDeltaX, dragDeltaZ) ||
-                this.rootControl.mouseDragged(getGuiMousePointInternal(mouseX, mouseY), dragDelta, mouseButtons);
+        return this.rootControl.mouseDragged(getGuiMousePointInternal(mouseX, mouseY), dragDelta, mouseButtons) ||
+                super.mouseDragged(mouseX, mouseY, mouseButtons, dragDeltaX, dragDeltaZ);
     }
 
     @Override

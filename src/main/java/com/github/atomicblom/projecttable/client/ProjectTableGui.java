@@ -29,6 +29,9 @@ import net.minecraft.util.text.TranslationTextComponent;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 public class ProjectTableGui extends McGUI<ProjectTableContainer>
@@ -49,7 +52,9 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     private boolean showOnlyCraftable = false;
     private CheckboxControl showOnlyCraftableComponent;
 
-
+    private ExecutorService executor = Executors.newFixedThreadPool(2);
+    private Future<?> _filterFuture = null;
+    private int _filterFutureId = 0;
 
     public ProjectTableGui(ProjectTableContainer screenContainer, PlayerInventory inv, ITextComponent title) {
         super(screenContainer, inv, title);
@@ -81,23 +86,17 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     @Override
     public void init()
     {
-        //xSize = 175;
-        //ySize = 227;
         super.init();
-        //xSize = 317;
-        //ySize = 227;
 
-        //searchField = new TextFieldWidget(font, guiLeft + 9 - (317 - 175) / 2, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
         searchField = new TextFieldWidget(font, guiLeft + 9, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
         searchField.setMaxStringLength(60);
         searchField.setEnableBackgroundDrawing(false);
         searchField.setVisible(true);
         searchField.setTextColor(16777215);
-        searchField.setFocused2(true);
+        searchField.setEnabled(false);
 
         createComponents();
-
-        createRecipeList();
+        executor.submit(this::createRecipeList);
     }
 
     private void createRecipeList() {
@@ -108,28 +107,44 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
                 .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
                 .collect(Collectors.toList());
+        searchField.setEnabled(true);
+        searchField.setFocused2(true);
 
-        createFilteredList();
+
+        triggerCreateFilteredList();
     }
 
-    private void createFilteredList()
+    private void triggerCreateFilteredList() {
+        ++_filterFutureId;
+        if (_filterFuture != null) {
+            _filterFuture.cancel(true);
+        }
+        _filterFuture = executor.submit(() -> this.createFilteredList(_filterFutureId));
+    }
+
+    private void createFilteredList(int id)
     {
         String text = searchField != null ? searchField.getText() : "";
-        filteredList.clear();
-
         final String searchText = text.toLowerCase();
 
         //Copy the Player inventory to guard against changes.
         PlayerInventory inventoryCopy = new PlayerInventory(playerInventory.player);
         inventoryCopy.copyInventory(playerInventory);
 
-        synchronized (filteredList) {
-            this.recipeList.parallelStream()
+        List<ProjectTableRecipeInstance> localFilteredList = this.recipeList.parallelStream()
+                .filter(f -> id == _filterFutureId)
                 .map(r -> updateRecipeInstance(r, inventoryCopy))
                 .filter(f -> filterRecipeInstance(f, searchText))
                 .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
-                .collect(Collectors.toCollection(() -> filteredList));
+                .collect(Collectors.toList());
+
+
+        if (_filterFutureId == id) {
+            synchronized (filteredList) {
+                filteredList.clear();
+                filteredList.addAll(localFilteredList);
+            }
         }
     }
 
@@ -189,7 +204,8 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         templateRecipeControl.addOnRecipeCraftingEventListener(this::craftRecipe);
         showOnlyCraftableComponent.addOnButtonPressedEventListener((button, value) -> {
             showOnlyCraftable = value;
-            createFilteredList();
+
+            triggerCreateFilteredList();
         });
         recipeListGuiComponent.addOnFireItemMadeVisibleEventListener((scrollPaneControl, projectTableRecipeControl, projectTableRecipe) -> {
             if (projectTableRecipe == null) return;
@@ -207,7 +223,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
 
         if (playerInventory.getTimesChanged() != timesInventoryChanged) {
             timesInventoryChanged = playerInventory.getTimesChanged();
-            createFilteredList();
+            triggerCreateFilteredList();
         }
     }
 
@@ -247,7 +263,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         String s = this.searchField.getText();
         if (this.searchField.charTyped(codePoint, modifiers)) {
             if (!Objects.equals(s, this.searchField.getText())) {
-                createFilteredList();
+                triggerCreateFilteredList();
             }
 
             return true;
@@ -261,7 +277,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         String s = this.searchField.getText();
         if (this.searchField.keyPressed(keyCode, scanCode, modifiers)) {
             if (!Objects.equals(s, this.searchField.getText())) {
-                createFilteredList();
+                triggerCreateFilteredList();
             }
 
             return true;

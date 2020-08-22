@@ -160,8 +160,6 @@ public enum ProjectTableManager
 
                 if (quantityToConsume > 0) {
                     quantityToConsume -= ItemStackHelper.func_233534_a_(playerInventory, itemStack1 -> itemStack1.isItemEqual(itemStack), quantityToConsume, false);
-                    //playerInventory.func_234564_a_(itemStack1 -> itemStack1.isItemEqual(itemStack), quantityToConsume, playerInventory);
-                    //quantityToConsume -= playerInventory.clearMatchingItems(itemStack.getItem(), metadata, quantityToConsume, itemStack.getTag());
                     playerInventory.markDirty();
                 }
             }
