@@ -19,9 +19,7 @@ import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.util.InputMappings;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -46,13 +44,10 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     private TextFieldWidget searchField = null;
     private Collection<ProjectTableRecipeInstance> recipeList;
     private final List<ProjectTableRecipeInstance> filteredList;
-    private ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl> recipeListGuiComponent = null;
-    private ScrollbarControl scrollbarGuiComponent = null;
     private GuiRenderer guiRenderer;
     private boolean showOnlyCraftable = false;
-    private CheckboxControl showOnlyCraftableComponent;
 
-    private ExecutorService executor = Executors.newFixedThreadPool(2);
+    private final ExecutorService executor = Executors.newFixedThreadPool(2);
     private Future<?> _filterFuture = null;
     private int _filterFutureId = 0;
 
@@ -176,11 +171,11 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         final GuiTexture checkboxActive = new GuiSubTexture(guiTexture, new Rectangle(318, 15, 12, 12));
 
         setRootControl(new TexturedPaneControl(guiRenderer, 317, 227, guiBackground));
-        scrollbarGuiComponent = new ScrollbarControl(guiRenderer, activeHandle, inactiveHandle);
+        ScrollbarControl scrollbarGuiComponent = new ScrollbarControl(guiRenderer, activeHandle, inactiveHandle);
         scrollbarGuiComponent.setLocation(298, 24);
         scrollbarGuiComponent.setSize(14, 115);
 
-        showOnlyCraftableComponent = new CheckboxControl(guiRenderer);
+        CheckboxControl showOnlyCraftableComponent = new CheckboxControl(guiRenderer);
         showOnlyCraftableComponent.setDefaultTexture(checkboxBackground);
         showOnlyCraftableComponent.setDisabledTexture(checkboxBackground);
         showOnlyCraftableComponent.setPressedTexture(checkboxBackground);
@@ -190,7 +185,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         showOnlyCraftableComponent.setValue(showOnlyCraftable);
 
         final ProjectTableRecipeControl templateRecipeControl = new ProjectTableRecipeControl(guiRenderer, craftableSubtexture, uncraftableSubtexture);
-        recipeListGuiComponent = new ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl>(guiRenderer, 330, 23*5)
+        ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl> recipeListGuiComponent = new ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl>(guiRenderer, 330, 23 * 5)
                 .setScrollbar(scrollbarGuiComponent)
                 .setItemRendererTemplate(templateRecipeControl)
                 .setVisibleItemCount(5)

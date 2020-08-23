@@ -6,8 +6,6 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -38,6 +36,7 @@ public class ProjectTableCraftPacket
     public static void received(final ProjectTableCraftPacket message, final Supplier<NetworkEvent.Context> ctx)
     {
         ServerPlayerEntity sender = ctx.get().getSender();
+        assert sender != null;
         final PlayerInventory playerInventory = sender.inventory;
         final ProjectTableRecipe recipe = message.getRecipe();
 

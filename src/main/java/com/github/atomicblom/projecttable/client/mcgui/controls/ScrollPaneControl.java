@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("TypeParameterNamingConvention")
 public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBase & IGuiTemplate<TChildComponentTemplate> & IModelView<TModel>> extends ControlBase
 {
     private ControlBase[] itemRenderers = new ControlBase[0];
@@ -82,6 +81,7 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
     }
 
     public Iterable<TModel> getVisibleItems() {
+        //noinspection unchecked
         return Arrays.stream(itemRenderers)
                 .map(ir -> ((IModelView<TModel>)ir).getModel())
                 .collect(Collectors.toList());

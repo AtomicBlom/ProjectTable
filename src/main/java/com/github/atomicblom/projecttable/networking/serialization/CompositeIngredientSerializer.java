@@ -5,12 +5,8 @@ import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.ingredient.CompositeIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
-import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
 import com.github.atomicblom.projecttable.networking.SerializationRegistry;
 import net.minecraft.network.PacketBuffer;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by codew on 26/01/2016.

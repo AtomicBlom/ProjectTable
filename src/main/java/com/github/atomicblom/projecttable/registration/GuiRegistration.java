@@ -2,7 +2,6 @@ package com.github.atomicblom.projecttable.registration;
 
 import com.github.atomicblom.projecttable.inventory.ProjectTableContainer;
 import net.minecraft.inventory.container.ContainerType;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;

@@ -7,7 +7,7 @@ public enum Logger
 {
     INSTANCE;
 
-    @SuppressWarnings({"NonSerializableFieldInSerializableClass", "InstanceVariableMayNotBeInitialized"})
+    @SuppressWarnings({"InstanceVariableMayNotBeInitialized"})
     private org.apache.logging.log4j.Logger logger;
 
     public static void info(final String format, final Object... args)

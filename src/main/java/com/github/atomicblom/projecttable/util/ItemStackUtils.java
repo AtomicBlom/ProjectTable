@@ -1,9 +1,7 @@
 package com.github.atomicblom.projecttable.util;
 
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.NonNullList;
 import org.jline.utils.Log;
 
 import javax.annotation.Nonnull;
@@ -21,57 +19,23 @@ public class ItemStackUtils
      */
     @Nonnull
     public static List<ItemStack> getSubtypes(@Nonnull ItemStack itemStack) {
-        Item item = itemStack.getItem();
-        if (item == null) {
-            return Collections.emptyList();
-        }
-
-        //FIXME: Figure out tags.
-        /*if (itemStack.getDamage() != OreDictionary.WILDCARD_VALUE) {
-            return Collections.singletonList(itemStack);
-        }*/
-        //return getSubtypes(item, itemStack.getCount());
-
         return Collections.singletonList(itemStack);
     }
 
-    @Nonnull
-    public static List<ItemStack> getSubtypes(@Nonnull Item item, int stackSize) {
-        List<ItemStack> itemStacks = new ArrayList<>();
-
-        //FIXME: Figure out what to do with subtypes
-
-        /*for (ItemGroup itemTab : item.getCreativeTabs()) {
-            NonNullList<ItemStack> subItems = NonNullList.create();
-            item.getSubItems(itemTab, subItems);
-            for (ItemStack subItem : subItems) {
-                if (subItem.getCount() != stackSize) {
-                    ItemStack subItemCopy = subItem.copy();
-                    subItemCopy.setCount(stackSize);
-                    itemStacks.add(subItemCopy);
-                } else {
-                    itemStacks.add(subItem);
-                }
-            }
-        }*/
-
-        return itemStacks;
-    }
-
-    public static List<ItemStack> getAllSubtypes(Iterable stacks) {
+    public static List<ItemStack> getAllSubtypes(Iterable<ItemStack> stacks) {
         List<ItemStack> allSubtypes = new ArrayList<>();
         getAllSubtypes(allSubtypes, stacks);
         return allSubtypes;
     }
 
-    private static void getAllSubtypes(List<ItemStack> subtypesList, Iterable stacks) {
+    private static void getAllSubtypes(List<ItemStack> subtypesList, Iterable<?> stacks) {
         for (Object obj : stacks) {
             if (obj instanceof ItemStack) {
                 ItemStack itemStack = (ItemStack) obj;
                 List<ItemStack> subtypes = getSubtypes(itemStack);
                 subtypesList.addAll(subtypes);
             } else if (obj instanceof Iterable) {
-                getAllSubtypes(subtypesList, (Iterable) obj);
+                getAllSubtypes(subtypesList, (Iterable<?>) obj);
             } else if (obj != null) {
                 Log.error("Unknown object found: {}", obj);
             }

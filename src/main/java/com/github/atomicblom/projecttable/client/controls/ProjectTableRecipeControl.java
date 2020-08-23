@@ -19,6 +19,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
@@ -91,7 +92,9 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
                 continue;
             }
 
-            final long totalWorldTime = Minecraft.getInstance().world.getGameTime();
+            final ClientWorld world = Minecraft.getInstance().world;
+            assert world != null;
+            final long totalWorldTime = world.getGameTime();
             final int renderedItem = (int)((totalWorldTime / 20) % possibleItems.size());
 
             int quantityConsumed = inputIngredient.getQuantityConsumed();
@@ -198,7 +201,6 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
         recipeCraftingEventListeners.add(listener);
     }
 
-    @SuppressWarnings("unused")
     public void removeOnRecipeCraftingEventListener(IRecipeCraftingEventListener listener) {
         recipeCraftingEventListeners.remove(listener);
     }

@@ -7,7 +7,7 @@ import net.minecraftforge.fml.event.lifecycle.IModBusEvent;
  * This event is fired during PostInit on the MinecraftForge.EVENT_BUS to notify dependant mods that SteamNSteel's
  * capabilities are available for use.
  */
-@SuppressWarnings("unused") //This is an API class
+//This is an API class
 public class ProjectTableInitializedEvent extends Event implements IModBusEvent {
     private final ICraftingManager craftingManager;
 

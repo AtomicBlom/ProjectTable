@@ -11,7 +11,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -58,11 +57,6 @@ public class ProjectTableRecipe
     public ImmutableList<IIngredient> getInput()
     {
         return input;
-    }
-
-    public void setInput(ImmutableList<IIngredient> input)
-    {
-        this.input = input;
     }
 
     public ITextComponent getDisplayName()

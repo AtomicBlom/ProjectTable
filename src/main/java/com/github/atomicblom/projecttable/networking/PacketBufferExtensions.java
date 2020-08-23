@@ -43,16 +43,13 @@ public class PacketBufferExtensions
     /**
      * Reads an ItemStack from this buffer, allowing for large sized stacks.
      */
-    @Nullable
-    public static ItemStack readLargeItemStackFromBuffer(PacketBuffer packetBuffer) throws IOException
-    {
+    public static ItemStack readLargeItemStackFromBuffer(PacketBuffer packetBuffer) {
         if (!packetBuffer.readBoolean()) {
             return ItemStack.EMPTY;
         } else {
             int i = packetBuffer.readVarInt();
             int j = packetBuffer.readInt();
             ItemStack itemstack = new ItemStack(Item.getItemById(i), j);
-            //itemstack.readShareTag(packetBuffer.readCompoundTag());
 
             itemstack.setTag(packetBuffer.readCompoundTag());
             return itemstack;

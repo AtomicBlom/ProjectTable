@@ -1,7 +1,5 @@
 package com.github.atomicblom.projecttable.client.mcgui;
 
-import com.github.atomicblom.projecttable.ProjectTableMod;
-import com.github.atomicblom.projecttable.client.ProjectTableGui;
 import com.github.atomicblom.projecttable.client.mcgui.util.*;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.IGuiEventListener;

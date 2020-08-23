@@ -1,6 +1,5 @@
 package com.github.atomicblom.projecttable.client.mcgui.controls;
 
-@SuppressWarnings("unused")
 public class McGUIException extends RuntimeException
 {
     private final boolean hasFries;

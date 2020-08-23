@@ -52,6 +52,7 @@ public class ProjectTableBlock extends HorizontalBlock
     final VoxelShape AABB = VoxelShapes.or(TableTop, LegA, LegB, LegC, LegD);
 
     @Override
+    @Deprecated
     public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
         return AABB;
     }

@@ -45,11 +45,13 @@ public class ScrollbarControl extends ControlBase
         getGuiRenderer().drawComponentTextureWithOffset(matrixStack, this, currentTexture, 0, getHandleTop());
     }
 
+    @SuppressWarnings("unused")
     public int getMinimumValue()
     {
         return minimumValue;
     }
 
+    @SuppressWarnings("unused")
     public void setMinimumValue(int minimumValue)
     {
         if (minimumValue < maximumValue) {
@@ -131,6 +133,7 @@ public class ScrollbarControl extends ControlBase
         return true;
     }
 
+    @SuppressWarnings("unused")
     public int getMaximumValue()
     {
         return maximumValue;
@@ -189,7 +192,7 @@ public class ScrollbarControl extends ControlBase
 
     private void fireOnCurrentValueChangedEvent(int previousValue, int newValue)
     {
-        for (final ICurrentValueChangedEventListener currentValueChangedEventListener : currentValueChangedEventListeners)
+        for (final ICurrentValueChangedEventListener<Integer> currentValueChangedEventListener : currentValueChangedEventListeners)
         {
             try {
                 currentValueChangedEventListener.onCurrentValueChanged(this, previousValue, newValue);
@@ -199,12 +202,12 @@ public class ScrollbarControl extends ControlBase
         }
     }
 
-    private final List<ICurrentValueChangedEventListener> currentValueChangedEventListeners = new ArrayList<ICurrentValueChangedEventListener>(1);
+    private final List<ICurrentValueChangedEventListener<Integer>> currentValueChangedEventListeners = new ArrayList<>(1);
 
-    public void addOnCurrentValueChangedEventListener(ICurrentValueChangedEventListener listener) {
+    public void addOnCurrentValueChangedEventListener(ICurrentValueChangedEventListener<Integer> listener) {
         currentValueChangedEventListeners.add(listener);
     }
-    public void removeOnCurrentValueChangedEventListener(ICurrentValueChangedEventListener listener) {
+    public void removeOnCurrentValueChangedEventListener(ICurrentValueChangedEventListener<Integer> listener) {
         currentValueChangedEventListeners.remove(listener);
     }
 
@@ -217,6 +220,7 @@ public class ScrollbarControl extends ControlBase
         this.scrollSize = scrollSize;
     }
 
+    @SuppressWarnings("unused")
     public int getScrollSize() {
         return scrollSize;
     }

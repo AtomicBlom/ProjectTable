@@ -104,11 +104,9 @@ public class CheckboxControl extends ControlBase {
 
     private final List<ICheckboxPressedEventListener> buttonPressedEventListeners = new ArrayList<>();
 
-    @SuppressWarnings("unused")
     public void addOnButtonPressedEventListener(ICheckboxPressedEventListener listener) {
         buttonPressedEventListeners.add(listener);
     }
-    @SuppressWarnings("unused")
     public void removeOnButtonPressedEventListener(ICheckboxPressedEventListener listener) {
         buttonPressedEventListeners.remove(listener);
     }

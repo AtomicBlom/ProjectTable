@@ -99,11 +99,9 @@ public class ButtonControl extends ControlBase
 
     private final List<IButtonPressedEventListener> buttonPressedEventListeners = new ArrayList<IButtonPressedEventListener>();
 
-    @SuppressWarnings("unused")
     public void addOnButtonPressedEventListener(IButtonPressedEventListener listener) {
         buttonPressedEventListeners.add(listener);
     }
-    @SuppressWarnings("unused")
     public void removeOnButtonPressedEventListener(IButtonPressedEventListener listener) {
         buttonPressedEventListeners.remove(listener);
     }

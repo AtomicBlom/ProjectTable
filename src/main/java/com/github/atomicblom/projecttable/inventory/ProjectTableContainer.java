@@ -1,30 +1,26 @@
 package com.github.atomicblom.projecttable.inventory;
 
 import com.github.atomicblom.projecttable.library.ContainerTypeLibrary;
+import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.*;
 import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.CraftingResultSlot;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
  * Created by codew on 5/01/2016.
  */
+@ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
 public class ProjectTableContainer extends Container {
 
     private final PlayerInventory playerInventory;
-    /** The crafting matrix inventory (3x3). */
-    public CraftingInventory craftMatrix = new CraftingInventory(this, 1, 32);
-    public IInventory craftResult = new CraftResultInventory();
-    private World worldObj;
-    /** Position of the workbench */
-    private BlockPos pos;
 
     public ProjectTableContainer(int id, PlayerInventory playerInventory) {
         super(ContainerTypeLibrary.projectTableContainer, id);
@@ -38,6 +34,7 @@ public class ProjectTableContainer extends Container {
     }
 
     @Override
+    @Nullable
     public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
         if (clickTypeIn == ClickType.QUICK_MOVE) {
             return null;
@@ -47,25 +44,6 @@ public class ProjectTableContainer extends Container {
 
     public PlayerInventory getPlayerInventory() {
         return this.playerInventory;
-    }
-
-    class ProjectTableCraftingSlot extends CraftingResultSlot
-    {
-        private final PlayerEntity player;
-        private final CraftingInventory craftMatrix;
-
-        public ProjectTableCraftingSlot(PlayerEntity player, CraftingInventory craftingMaterials, IInventory craftingOutput, int slotIndex)
-        {
-            super(player, craftingMaterials, craftingOutput, slotIndex, 0, 0);
-            this.player = player;
-            craftMatrix = craftingMaterials;
-        }
-
-        public void onPickupFromSlot(PlayerEntity playerIn, ItemStack stack)
-        {
-            //FMLCommonHandler.instance().firePlayerCraftingEvent(playerIn, stack, ProjectTableContainer.this.craftMatrix);
-            onCrafting(stack);
-        }
     }
 
     private static final int PLAYER_INVENTORY_ROWS = 3;
@@ -78,16 +56,13 @@ public class ProjectTableContainer extends Container {
 
     private static boolean equalsIgnoreStackSize(ItemStack itemStack1, ItemStack itemStack2)
     {
-        if (itemStack1 != null && itemStack2 != null)
+        if (Item.getIdFromItem(itemStack1.getItem()) - Item.getIdFromItem(itemStack2.getItem()) == 0)
         {
-            if (Item.getIdFromItem(itemStack1.getItem()) - Item.getIdFromItem(itemStack2.getItem()) == 0)
+            //noinspection ObjectEquality
+            if (itemStack1.getItem() == itemStack2.getItem())
             {
-                //noinspection ObjectEquality
-                if (itemStack1.getItem() == itemStack2.getItem())
-                {
-                    return itemStack1.getDamage() == itemStack2.getDamage() &&
-                            areItemStackTagsEqual(itemStack1, itemStack2);
-                }
+                return itemStack1.getDamage() == itemStack2.getDamage() &&
+                        areItemStackTagsEqual(itemStack1, itemStack2);
             }
         }
 
@@ -159,12 +134,12 @@ public class ProjectTableContainer extends Container {
                 final Slot slot = inventorySlots.get(currentSlotIndex);
                 final ItemStack stackInSlot = slot.getStack();
 
-                if (slot.isItemValid(itemStack) && stackInSlot == null)
+                if (slot.isItemValid(itemStack) && stackInSlot.isEmpty())
                 {
                     slot.putStack(cloneItemStack(itemStack, Math.min(itemStack.getCount(), slot.getSlotStackLimit())));
                     slot.onSlotChanged();
 
-                    if (slot.getStack() != null)
+                    if (!slot.getStack().isEmpty())
                     {
                         itemStack.shrink(slot.getStack().getCount());
                         return true;
@@ -206,17 +181,5 @@ public class ProjectTableContainer extends Container {
             //noinspection ObjectAllocationInLoop
             addSlot(new Slot(playerInventory, actionBarSlotIndex, xOffset + actionBarSlotIndex * 18, yOffset + 58));
         }
-    }
-
-    boolean didTransferStackInStandardSlot(int slotIndex, ItemStack slotItemStack, int indexFirstStdSlot)
-    {
-        if (slotIndex >= indexFirstStdSlot && slotIndex < inventorySlots.size() - 9)
-        {
-            return !mergeItemStack(slotItemStack, inventorySlots.size() - 9, inventorySlots.size(), false);
-        } else if (slotIndex >= inventorySlots.size() - 9 && slotIndex < inventorySlots.size())
-        {
-            return !mergeItemStack(slotItemStack, indexFirstStdSlot, inventorySlots.size() - 9, false);
-        }
-        return false;
     }
 }

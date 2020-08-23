@@ -20,7 +20,6 @@ import java.util.Stack;
 public class GuiRenderer
 {
     private final Minecraft client;
-    private final McGUI<?> gui;
     private final TextureManager textureManager;
     private final FontRenderer fontRenderer;
     private final ItemRenderer itemRenderer;
@@ -31,7 +30,6 @@ public class GuiRenderer
     public GuiRenderer(McGUI<?> gui)
     {
         this.client = gui.getMinecraft();
-        this.gui = gui;
         this.textureManager = this.client.textureManager;
         this.fontRenderer = this.client.fontRenderer;
         this.itemRenderer = this.client.getItemRenderer();
@@ -57,7 +55,7 @@ public class GuiRenderer
     /////////////////////////////////////////////////////////////////////////////
     private void verifyTexture(GuiTexture texture)
     {
-        if (currentTexture == null || !texture.equals(currentTexture)) {
+        if (!texture.equals(currentTexture)) {
             currentTexture = texture;
             textureManager.bindTexture(texture.getTextureLocation());
         }

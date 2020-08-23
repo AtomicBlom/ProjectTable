@@ -12,11 +12,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.*;
+import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.IRecipeType;
+import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
@@ -24,7 +27,7 @@ import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -87,13 +90,23 @@ public class ReplaceProjectTableRecipesPacket
             ProjectTableMod.logger.info("Duplicating mod recipes");
             if (msg.shouldIncludeVanillaRecipes()) {
                 final Minecraft instance = Minecraft.getInstance();
-                CraftingInventory tempCraftingInventory = new CraftingInventory(instance.player.container, 3, 3);
-                instance.getConnection()
+                final ClientPlayerEntity player = instance.player;
+                final ClientPlayNetHandler connection = instance.getConnection();
+
+                assert player != null;
+                assert connection != null;
+
+                CraftingInventory tempCraftingInventory = new CraftingInventory(player.container, 3, 3);
+
+                //noinspection unchecked
+                connection
                         .getRecipeManager()
                         .getRecipes()
                         .parallelStream()
                         .filter(r -> !r.isDynamic() && r.getType() == IRecipeType.CRAFTING)
-                        .map(r -> (IRecipe<CraftingInventory>)r)
+                        .map(r ->
+                                (IRecipe<CraftingInventory>)r
+                        )
                         .map(r -> new ProjectTableRecipe(
                                 r.getId().toString(),
                                 "CRAFTING_TABLE",
@@ -106,11 +119,11 @@ public class ReplaceProjectTableRecipesPacket
                                 r.getRecipeOutput().getDisplayName(),
                                 r.getIngredients()
                                         .stream()
-                                        .map(i -> i.serialize())
+                                        .map(Ingredient::serialize)
                                         .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                                         .entrySet().stream()
                                         .map(i -> ReplaceProjectTableRecipesPacket.toProjectTableIngredient(i.getKey(), i.getValue().intValue()))
-                                        .filter(i -> i != null)
+                                        .filter(Objects::nonNull)
                                         .collect(Collectors.toList())
                         ))
                         .forEach(r -> {
@@ -150,7 +163,8 @@ public class ReplaceProjectTableRecipesPacket
     private static IIngredient getIngredientFromJsonElement(JsonElement serializedIngredient, int count) {
         final JsonObject serialize = serializedIngredient.getAsJsonObject();
         if (serialize.has("item")) {
-            final Item item = Registry.ITEM.getOrDefault(new ResourceLocation(serialize.get("item").getAsString()));
+            @SuppressWarnings("deprecation")
+            Item item = Registry.ITEM.getOrDefault(new ResourceLocation(serialize.get("item").getAsString()));
             final ItemStack itemStack = new ItemStack(item, count);
             if (itemStack.isEmpty()) return null;
             return new ItemStackIngredient(itemStack);

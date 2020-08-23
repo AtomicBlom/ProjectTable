@@ -10,6 +10,7 @@ import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.ToolType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -38,7 +39,9 @@ public class BlockRegistration {
     static <B extends Block> BlockItem configureBlockItem(B block) {
 
         BlockItem itemBlock = new BlockItem(block, new Item.Properties().group(ItemGroup.MISC));
-        itemBlock.setRegistryName(block.getRegistryName());
+        final ResourceLocation registryName = block.getRegistryName();
+        assert registryName != null;
+        itemBlock.setRegistryName(registryName);
         return itemBlock;
     }
 }

@@ -25,7 +25,7 @@ import net.minecraft.item.ItemStack;
  * @author Scott Killen
  * @version 1.0
  * @see com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient
- * @see com.github.atomicblom.projecttable.api.ingredient.OreDictionaryIngredient
+ * @see com.github.atomicblom.projecttable.api.ingredient.ItemTagIngredient
  * @since 0.1
  */
 public interface IIngredient
