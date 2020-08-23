@@ -45,6 +45,9 @@ public enum ProjectTableManager
                 }
             }
         }
+
+
+
         if (!problems.isEmpty()) {
             throw new InvalidRecipeException("There was an issue loading the recipe", problems);
         }
@@ -55,10 +58,7 @@ public enum ProjectTableManager
         }
     }
 
-    public boolean canCraftRecipe(ProjectTableRecipe recipe, PlayerInventory playerInventory)
-    {
-        final List<ItemStack> compactedInventoryItems = getCompactedInventoryItems(playerInventory);
-
+    public boolean canCraftRecipe(ProjectTableRecipe recipe, List<ItemStack> compactedInventoryItems) {
         for (final IIngredient recipeIngredient : recipe.getInput())
         {
             boolean itemMatched = false;
@@ -93,7 +93,13 @@ public enum ProjectTableManager
         return true;
     }
 
-    private List<ItemStack> getCompactedInventoryItems(PlayerInventory inventorySlots) {
+    public boolean canCraftRecipe(ProjectTableRecipe recipe, PlayerInventory playerInventory)
+    {
+        final List<ItemStack> compactedInventoryItems = getCompactedInventoryItems(playerInventory);
+        return canCraftRecipe(recipe, compactedInventoryItems);
+    }
+
+    public List<ItemStack> getCompactedInventoryItems(PlayerInventory inventorySlots) {
         List<ItemStack> usableItems = Lists.newArrayList();
 
         Stream<ItemStack> stream = Stream.concat(inventorySlots.mainInventory.stream(), Stream.of(inventorySlots.getItemStack()));
@@ -107,7 +113,6 @@ public enum ProjectTableManager
             boolean itemMatched = false;
             for (final ItemStack existingItemStack : usableItems) {
                 //FIXME: Adjust for tags
-                //if (existingItemStack.getItem() == itemStack.getItem() && existingItemStack.getMetadata() == itemStack.getMetadata() && ItemStack.areItemStackTagsEqual(existingItemStack, itemStack))
                 if (existingItemStack.getItem() == itemStack.getItem() && ItemStack.areItemStackTagsEqual(existingItemStack, itemStack))
                 {
                     itemMatched = true;

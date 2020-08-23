@@ -81,31 +81,25 @@ public class ProjectTableRecipe
 
     public static ProjectTableRecipe readFromBuffer(PacketBuffer buf)
     {
-        try
+        String id = buf.readString(255);
+        String source = buf.readString(255);
+
+        byte inputItemStackCount = buf.readByte();
+        List<IIngredient> input = Lists.newArrayList();
+        for (int i = 0; i < inputItemStackCount; ++i)
         {
-            String id = buf.readString(255);
-            String source = buf.readString(255);
-
-            byte inputItemStackCount = buf.readByte();
-            List<IIngredient> input = Lists.newArrayList();
-            for (int i = 0; i < inputItemStackCount; ++i)
-            {
-                input.add(readIngredient(buf));
-            }
-
-            byte outputItemStackCount = buf.readByte();
-            List<ItemStack> output = Lists.newArrayList();
-            for (int i = 0; i < outputItemStackCount; ++i)
-            {
-                output.add(PacketBufferExtensions.readLargeItemStackFromBuffer(buf));
-            }
-
-            final ITextComponent displayName = DataSerializers.TEXT_COMPONENT.read(buf);
-            return new ProjectTableRecipe(id, source, output, displayName, input);
-        } catch (IOException e)
-        {
-            throw new ProjectTableException("Unable to deserialize ProjectTableRecipe", e);
+            input.add(readIngredient(buf));
         }
+
+        byte outputItemStackCount = buf.readByte();
+        List<ItemStack> output = Lists.newArrayList();
+        for (int i = 0; i < outputItemStackCount; ++i)
+        {
+            output.add(PacketBufferExtensions.readLargeItemStackFromBuffer(buf));
+        }
+
+        final ITextComponent displayName = DataSerializers.TEXT_COMPONENT.read(buf);
+        return new ProjectTableRecipe(id, source, output, displayName, input);
     }
 
     private static IIngredient readIngredient(PacketBuffer buf) {

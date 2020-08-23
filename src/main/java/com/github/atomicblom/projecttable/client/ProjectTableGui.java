@@ -18,13 +18,16 @@ import com.github.atomicblom.projecttable.inventory.ProjectTableContainer;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -50,6 +53,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
     private Future<?> _filterFuture = null;
     private int _filterFutureId = 0;
+    private ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl> recipeListGuiComponent;
 
     public ProjectTableGui(ProjectTableContainer screenContainer, PlayerInventory inv, ITextComponent title) {
         super(screenContainer, inv, title);
@@ -98,13 +102,13 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
 
         Collection<ProjectTableRecipe> recipes = Lists.newArrayList(ProjectTableManager.INSTANCE.getRecipes());
         this.recipeList = recipes.parallelStream()
+                .filter(Objects::nonNull) // WTF... where are null recipes sneaking in?
                 .map(ProjectTableRecipeInstance::new)
                 .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
                 .collect(Collectors.toList());
         searchField.setEnabled(true);
         searchField.setFocused2(true);
-
 
         triggerCreateFilteredList();
     }
@@ -119,32 +123,34 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
 
     private void createFilteredList(int id)
     {
+        long startTime = new Date().getTime();
         String text = searchField != null ? searchField.getText() : "";
         final String searchText = text.toLowerCase();
 
         //Copy the Player inventory to guard against changes.
         PlayerInventory inventoryCopy = new PlayerInventory(playerInventory.player);
         inventoryCopy.copyInventory(playerInventory);
-
+        final List<ItemStack> compactedInventoryItems = ProjectTableManager.INSTANCE.getCompactedInventoryItems(inventoryCopy);
         List<ProjectTableRecipeInstance> localFilteredList = this.recipeList.parallelStream()
                 .filter(f -> id == _filterFutureId)
-                .map(r -> updateRecipeInstance(r, inventoryCopy))
+                .map(r -> updateRecipeInstance(r, compactedInventoryItems))
                 .filter(f -> filterRecipeInstance(f, searchText))
                 .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
                 .collect(Collectors.toList());
 
-
+        final long endTime = new Date().getTime();
         if (_filterFutureId == id) {
-            synchronized (filteredList) {
-                filteredList.clear();
-                filteredList.addAll(localFilteredList);
-            }
-        }
+            this.recipeListGuiComponent.setItems(localFilteredList);
+
+            //ProjectTableMod.logger.info("List filtered in {}ms", endTime - startTime);
+        } /*else { //Performance profiling
+            ProjectTableMod.logger.info("List filtered cancelled after {}ms", endTime - startTime);
+        }*/
     }
 
-    private ProjectTableRecipeInstance updateRecipeInstance(ProjectTableRecipeInstance recipeInstance, PlayerInventory inventoryCopy) {
-        final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipeInstance.getRecipe(), inventoryCopy);
+    private ProjectTableRecipeInstance updateRecipeInstance(ProjectTableRecipeInstance recipeInstance, List<ItemStack> compactedInventory) {
+        final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipeInstance.getRecipe(), compactedInventory);
         recipeInstance.setCanCraft(canCraft);
 
         //FIXME: Implement this when we support GameStages or something similar.
@@ -185,7 +191,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         showOnlyCraftableComponent.setValue(showOnlyCraftable);
 
         final ProjectTableRecipeControl templateRecipeControl = new ProjectTableRecipeControl(guiRenderer, craftableSubtexture, uncraftableSubtexture);
-        ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl> recipeListGuiComponent = new ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl>(guiRenderer, 330, 23 * 5)
+        recipeListGuiComponent = new ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl>(guiRenderer, 330, 23 * 5)
                 .setScrollbar(scrollbarGuiComponent)
                 .setItemRendererTemplate(templateRecipeControl)
                 .setVisibleItemCount(5)
