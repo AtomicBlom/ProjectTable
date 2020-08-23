@@ -23,7 +23,7 @@ public class CompositeIngredientSerializer implements IIngredientSerializer
         int compositeIngredientCount = buffer.readInt();
         IIngredient[] childIngredients = new IIngredient[compositeIngredientCount];
         for (int i = 0; i < compositeIngredientCount; i++) {
-            String serializerName = buffer.readString();
+            String serializerName = buffer.readString(32767);
             IIngredientSerializer serializer = SerializationRegistry.INSTANCE.getSerializer(serializerName);
             childIngredients[i] = serializer.deserialize(buffer);
         }
