@@ -123,7 +123,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
 
     private void createFilteredList(int id)
     {
-        long startTime = new Date().getTime();
+        //long startTime = new Date().getTime();
         String text = searchField != null ? searchField.getText() : "";
         final String searchText = text.toLowerCase();
 
@@ -139,7 +139,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
                 .sequential()
                 .collect(Collectors.toList());
 
-        final long endTime = new Date().getTime();
+        //final long endTime = new Date().getTime();
         if (_filterFutureId == id) {
             this.recipeListGuiComponent.setItems(localFilteredList);
 

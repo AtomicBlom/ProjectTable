@@ -19,26 +19,25 @@ public class ProjectTableConfig {
             builder.comment("Server configuration settings")
                     .push("server");
 
-            // TODO: add support for reading from the crafting table as well.
             loadCraftingTableRecipes = builder
                     .comment("Causes any recipes from the normal crafting table to be made available in the table")
                     .translation("projecttable.configgui.loadCraftingTableRecipes")
                     .worldRestart()
-                    .define("loadCraftingTableRecipes", false);
+                    .define("loadCraftingTableRecipes", true);
 
 
             useExampleVanillaRecipes = builder
                     .comment("Loads an example set of bulk recipes appropriate for Vanilla")
                     .translation("projecttable.configgui.useExampleVanillaRecipes")
                     .worldRestart()
-                    .define("useExampleVanillaRecipes", true);
+                    .define("useExampleVanillaRecipes", false);
 
             if (!ProjectTableMod.IS_CI_BUILD) {
                 useDevRecipes = builder
                         .comment("Exercises all the various ways a mod can add recipes to the mod.")
                         .translation("projecttable.configgui.useDevRecipes")
                         .worldRestart()
-                        .define("useDevRecipes", true);
+                        .define("useDevRecipes", false);
             } else {
                 useDevRecipes = null;
             }
