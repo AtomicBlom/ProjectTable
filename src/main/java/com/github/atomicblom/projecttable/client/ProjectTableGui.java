@@ -231,7 +231,11 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     @Override
     protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseZ)
     {
-        font.func_238407_a_(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
+        if (ProjectTableMod.USE_DOT_TWO_GUI) {
+            font.func_243246_a(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
+        } else {
+            font.func_238407_a_(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
+        }
     }
 
     protected void setRecipeRenderText(ProjectTableRecipeInstance recipeInstance)

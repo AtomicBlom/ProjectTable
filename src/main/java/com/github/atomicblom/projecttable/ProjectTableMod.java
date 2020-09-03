@@ -10,13 +10,16 @@ import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacket;
 import com.github.atomicblom.projecttable.registration.ModCrafting;
 import com.google.common.collect.Lists;
+import com.mojang.bridge.game.GameVersion;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.MinecraftVersion;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.StartupMessageManager;
+import net.minecraftforge.fml.VersionChecker;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -26,6 +29,7 @@ import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.versions.forge.ForgeVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,12 +45,15 @@ public class ProjectTableMod
 
     public static Logger logger = LogManager.getLogger(MODID);
     public static boolean IS_CI_BUILD = false;
+    public static boolean USE_DOT_TWO_GUI = false;
 
     public ProjectTableMod() {
         if (Boolean.getBoolean("@IS_CI_BUILD@")) {
             IS_CI_BUILD = true;
         }
 
+        GameVersion gameVersion = MinecraftVersion.GAME_VERSION;
+        USE_DOT_TWO_GUI = gameVersion.getReleaseTarget().equals("1.16.2");
         instance = this;
         final FMLJavaModLoadingContext javaModLoadingContext = FMLJavaModLoadingContext.get();
         IEventBus eventBus = javaModLoadingContext.getModEventBus();

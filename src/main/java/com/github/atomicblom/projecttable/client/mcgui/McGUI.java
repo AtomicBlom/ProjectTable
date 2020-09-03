@@ -61,7 +61,7 @@ public abstract class McGUI<T extends Container> extends ContainerScreen<T>
         final String name = I18n.format(getInventoryName());
 
         font.drawString(matrixStack, name, xSize / 2.0f - font.getStringWidth(name) / 2.0f, 6, TEXT_COLOR);
-        font.func_238407_a_(matrixStack, INVENTORY, 8, ySize - 96 + 2, TEXT_COLOR);
+        font.func_243246_a(matrixStack, INVENTORY, 8, ySize - 96 + 2, TEXT_COLOR);
     }
 
     @Override
