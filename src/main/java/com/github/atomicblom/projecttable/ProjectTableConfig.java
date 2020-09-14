@@ -16,8 +16,8 @@ public class ProjectTableConfig {
         public final ForgeConfigSpec.BooleanValue useDevRecipes;
 
         Common(ForgeConfigSpec.Builder builder) {
-            builder.comment("Server configuration settings")
-                    .push("server");
+            builder.comment("Common configuration settings")
+                    .push("common");
 
             loadCraftingTableRecipes = builder
                     .comment("Causes any recipes from the normal crafting table to be made available in the table")

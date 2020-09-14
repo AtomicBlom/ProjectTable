@@ -8,8 +8,16 @@ pool:
 
 variables:
   revision: $[counter('release-number', 0)]
+  GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
 
 steps:
+- task: Cache@2
+  inputs:
+    key: 'gradle | "$(Agent.OS)" | build.gradle | gradle.properties | src/main/resources/META-INF/accesstransformer.cfg'
+    restoreKeys: gradle
+    path: $(GRADLE_USER_HOME)
+  displayName: Gradle build cache
+
 - powershell: |
     (Get-Content ./gradle.properties).Split([Environment]::NewLine) | % {
         $kvp = $_.Split('=')
@@ -79,6 +87,11 @@ steps:
     testResultsFiles: '**/TEST-*.xml'
     tasks: 'build'
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
+
+  - script: |
+    # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
+    ./gradlew --stop
+  displayName: Kill Daemon
 
 - task: CopyFiles@2
   inputs:
