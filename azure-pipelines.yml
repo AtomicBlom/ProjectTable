@@ -55,40 +55,7 @@ steps:
     testResultsFiles: '**/TEST-*.xml'
     tasks: 'build'
 
-- task: CopyFiles@2
-  inputs:
-    sourceFolder: './build/libs/'
-    contents: 'projecttable-*-universal.jar'
-    targetFolder: $(build.artifactStagingDirectory)/release
-  condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
-
-- task: Gradle@2
-  inputs:
-    workingDirectory: ''
-    gradleWrapperFile: 'gradlew'
-    gradleOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.8'
-    jdkArchitectureOption: 'x64'
-    publishJUnitResults: false
-    tasks: 'clean'
-  condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
-
-- task: Gradle@2
-  inputs:
-    workingDirectory: ''
-    options: '-PCIRevision=$(javaprops_mod_version).$(revision)-beta -PCIType=BETA'
-    gradleWrapperFile: 'gradlew'
-    gradleOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.8'
-    jdkArchitectureOption: 'x64'
-    publishJUnitResults: false
-    testResultsFiles: '**/TEST-*.xml'
-    tasks: 'build'
-  condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
-
-  - script: |
+- script: |
     # stop the Gradle daemon to ensure no files are left open (impacting the save cache operation later)
     ./gradlew --stop
   displayName: Kill Daemon
@@ -96,10 +63,20 @@ steps:
 - task: CopyFiles@2
   inputs:
     sourceFolder: './build/libs/'
-    contents: 'projecttable-*-beta-universal.jar'
-    targetFolder: $(build.artifactStagingDirectory)/beta
+    contents: 'projecttable-*-universal.jar'
+    targetFolder: $(build.artifactStagingDirectory)
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Build Artifacts to VSTS'
+  condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
+
+- task: AzureFileCopy@4
+  inputs:
+    SourcePath: '$(build.artifactStagingDirectory)'
+    azureSubscription: 'Artifact Storage'
+    Destination: 'AzureBlob'
+    storage: 'modartifacts'
+    ContainerName: 'ProjectTable'
+    BlobPrefix: '$(javaprops_minecraft_version)'
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
