@@ -71,11 +71,11 @@ steps:
   displayName: 'Publish Build Artifacts to VSTS'
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
 
-- task: AzureFileCopy@4
-  inputs:
-    SourcePath: '$(build.artifactStagingDirectory)'
-    azureSubscription: 'Artifact Storage'
-    Destination: 'AzureBlob'
-    storage: 'modartifacts'
-    ContainerName: 'ProjectTable'
-  condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
+# - task: AzureFileCopy@4
+#   inputs:
+#     SourcePath: '$(build.artifactStagingDirectory)'
+#     azureSubscription: 'Artifact Storage'
+#     Destination: 'AzureBlob'
+#     storage: 'modartifacts'
+#     ContainerName: 'ProjectTable'
+#   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
