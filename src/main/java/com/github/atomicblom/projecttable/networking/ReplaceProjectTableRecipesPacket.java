@@ -75,6 +75,7 @@ public class ReplaceProjectTableRecipesPacket
         final Collection<ProjectTableRecipe> recipe = msg.getRecipes();
 
         final NetworkEvent.Context context = ctx.get();
+        context.setPacketHandled(true);
         context.enqueueWork(() -> {
             ProjectTableMod.logger.info("Replacing client recipe list from server");
             ProjectTableManager.INSTANCE.clearRecipes();

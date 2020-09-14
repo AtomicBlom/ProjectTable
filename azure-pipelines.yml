@@ -63,7 +63,7 @@ steps:
 - task: CopyFiles@2
   inputs:
     sourceFolder: './build/libs/'
-    contents: 'projecttable-*-universal.jar'
+    contents: 'projecttable-*.jar'
     targetFolder: $(build.artifactStagingDirectory)
   condition: and(succeeded(), eq(variables['CreateArtifacts'], 'True'))
 

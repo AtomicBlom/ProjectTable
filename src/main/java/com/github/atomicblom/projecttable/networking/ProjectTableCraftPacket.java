@@ -35,17 +35,20 @@ public class ProjectTableCraftPacket
 
     public static void received(final ProjectTableCraftPacket message, final Supplier<NetworkEvent.Context> ctx)
     {
-        ServerPlayerEntity sender = ctx.get().getSender();
-        assert sender != null;
-        final PlayerInventory playerInventory = sender.inventory;
-        final ProjectTableRecipe recipe = message.getRecipe();
+        final NetworkEvent.Context context = ctx.get();
 
-        final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipe, playerInventory);
-        if (!canCraft) {
-            return;
-        }
+        context.setPacketHandled(true);
+        context.enqueueWork(() -> {
+            ServerPlayerEntity sender = context.getSender();
+            assert sender != null;
+            final PlayerInventory playerInventory = sender.inventory;
+            final ProjectTableRecipe recipe = message.getRecipe();
 
-        ctx.get().enqueueWork(() -> {
+            final boolean canCraft = ProjectTableManager.INSTANCE.canCraftRecipe(recipe, playerInventory);
+            if (!canCraft) {
+                return;
+            }
+
             ProjectTableManager.INSTANCE.craftRecipe(recipe, playerInventory);
         });
     }
