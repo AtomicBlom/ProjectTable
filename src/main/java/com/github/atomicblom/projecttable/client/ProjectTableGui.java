@@ -18,7 +18,6 @@ import com.github.atomicblom.projecttable.inventory.ProjectTableContainer;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -27,7 +26,6 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -231,11 +229,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     @Override
     protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseZ)
     {
-        if (ProjectTableMod.USE_DOT_TWO_GUI) {
-            font.func_243246_a(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
-        } else {
-            font.func_238407_a_(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
-        }
+        font.func_243246_a(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
     }
 
     protected void setRecipeRenderText(ProjectTableRecipeInstance recipeInstance)
