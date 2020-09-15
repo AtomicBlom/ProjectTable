@@ -72,24 +72,24 @@ public class ReplaceProjectTableRecipesPacket
 
     public static void received(final ReplaceProjectTableRecipesPacket msg, final Supplier<NetworkEvent.Context> ctx)
     {
+        ProjectTableMod.logger.info("Replacing client recipe list from server");
         final Collection<ProjectTableRecipe> recipe = msg.getRecipes();
-
         final NetworkEvent.Context context = ctx.get();
-        context.setPacketHandled(true);
-        context.enqueueWork(() -> {
-            ProjectTableMod.logger.info("Replacing client recipe list from server");
+        context.setPacketHandled(true);        context.enqueueWork(() -> {
+
             ProjectTableManager.INSTANCE.clearRecipes();
-            List<IngredientProblem> ingredient = Lists.newArrayList();
+            List<IngredientProblem> badRecipes = Lists.newArrayList();
             for (ProjectTableRecipe projectTableRecipe : recipe) {
                 try {
                     ProjectTableManager.INSTANCE.addProjectTableRecipe(projectTableRecipe, false, true);
                 } catch (InvalidRecipeException e) {
-                    ingredient.addAll(e.getProblems());
+                    badRecipes.addAll(e.getProblems());
                 }
             }
 
-            ProjectTableMod.logger.info("Duplicating mod recipes");
+
             if (msg.shouldIncludeVanillaRecipes()) {
+
                 final Minecraft instance = Minecraft.getInstance();
                 final ClientPlayerEntity player = instance.player;
                 final ClientPlayNetHandler connection = instance.getConnection();
@@ -98,6 +98,8 @@ public class ReplaceProjectTableRecipesPacket
                 assert connection != null;
 
                 CraftingInventory tempCraftingInventory = new CraftingInventory(player.container, 3, 3);
+
+                ProjectTableMod.logger.info("Duplicating mod recipes");
 
                 //noinspection unchecked
                 connection
@@ -108,37 +110,48 @@ public class ReplaceProjectTableRecipesPacket
                         .map(r ->
                                 (IRecipe<CraftingInventory>)r
                         )
-                        .map(r -> new ProjectTableRecipe(
-                                r.getId().toString(),
-                                "CRAFTING_TABLE",
-                                Stream.concat(
+                        .map(r -> {
+                            try {
+                                final Stream<ItemStack> returnedItems = Stream.concat(
                                         Stream.of(r.getRecipeOutput()),
                                         r.getRemainingItems(tempCraftingInventory).stream()
-                                )
-                                        .filter(i -> !i.isEmpty())
-                                        .collect(Collectors.toList()),
-                                r.getRecipeOutput().getDisplayName(),
-                                r.getIngredients()
-                                        .stream()
-                                        .map(Ingredient::serialize)
-                                        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-                                        .entrySet().stream()
-                                        .map(i -> ReplaceProjectTableRecipesPacket.toProjectTableIngredient(i.getKey(), i.getValue().intValue()))
-                                        .filter(Objects::nonNull)
-                                        .collect(Collectors.toList())
-                        ))
+                                );
+                                final Stream<Ingredient> ingredients = r.getIngredients()
+                                        .stream();
+                                return new ProjectTableRecipe(
+                                        r.getId().toString(),
+                                        "CRAFTING_TABLE",
+                                        returnedItems
+                                                .filter(i -> !i.isEmpty())
+                                                .collect(Collectors.toList()),
+                                        r.getRecipeOutput().getDisplayName(),
+                                        ingredients
+                                                .filter(Ingredient::isSimple)
+                                                .map(Ingredient::serialize)
+                                                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                                                .entrySet().stream()
+                                                .map(i -> ReplaceProjectTableRecipesPacket.toProjectTableIngredient(i.getKey(), i.getValue().intValue()))
+                                                .filter(Objects::nonNull)
+                                                .collect(Collectors.toList())
+                                );
+                            } catch (Exception e) {
+                                String name = r != null ? r.getId() != null ? r.getId().toString() : null : null;
+                                if (name == null) name = "RECIPE WITH NO ID!";
+                                return new ProjectTableRecipe(name, "CRAFTING_TABLE", ItemStack.EMPTY, new ItemStackIngredient(ItemStack.EMPTY));
+                            }
+                        })
                         .forEach(r -> {
                             try {
                                 ProjectTableManager.INSTANCE.addProjectTableRecipe(r, false, true);
                             } catch (InvalidRecipeException e) {
-                                ingredient.addAll(e.getProblems());
+                                badRecipes.addAll(e.getProblems());
                             }
                         });
             }
 
-            if (!ingredient.isEmpty()) {
+            if (!badRecipes.isEmpty()) {
                 throw new ProjectTableException("Errors processing IMC based recipes:\n" +
-                        ingredient.stream()
+                        badRecipes.stream()
                                 .map(i -> String.format("%s@%s: %s", i.getSource(),i.getId(), i.getMessage()))
                                 .collect(Collectors.joining("\n"))
                 );

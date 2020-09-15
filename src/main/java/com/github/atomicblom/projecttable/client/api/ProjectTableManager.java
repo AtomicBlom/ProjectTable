@@ -31,6 +31,10 @@ public enum ProjectTableManager
 
     public void addProjectTableRecipe(ProjectTableRecipe recipe, boolean isDefaultSet, boolean checkForProblems) {
         List<IngredientProblem> problems = Lists.newArrayList();
+        if (recipe.getInput().isEmpty()) {
+            problems.add(new IngredientProblem(recipe.getId(), recipe.getSource(), "No inputs to create recipe, or all filtered out as too complex"));
+        }
+
         for (ItemStack itemStack : recipe.output) {
             if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(itemStack.getItem()) || itemStack.isEmpty()) {
                 problems.add(new IngredientProblem(recipe.getId(), recipe.getSource(), "Invalid ItemStack: " + itemStack.toString()));
