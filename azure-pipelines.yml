@@ -15,13 +15,22 @@ variables:
 steps:
   - task: Cache@2
     inputs:
-      key: 'gradle | "$(Agent.OS)" | build.gradle | gradle.properties | src/main/resources/META-INF/accesstransformer.cfg'
+      key: 'gradle | "$(Agent.OS)" | build.gradle | dependency.properties | src/main/resources/META-INF/accesstransformer.cfg'
       restoreKeys: gradle
       path: $(GRADLE_USER_HOME)
     displayName: Gradle build cache
 
   - powershell: |
       (Get-Content ./gradle.properties).Split([Environment]::NewLine) | % {
+          $kvp = $_.Split('=')
+          if ($kvp.Count -gt 1) {
+              $key = $kvp[0] -replace "\.", "_";
+              $value = $kvp[1];
+              Write-Host "##vso[task.setvariable variable=javaprops_$key]$value"
+          }
+      }
+
+      (Get-Content ./dependency.properties).Split([Environment]::NewLine) | % {
           $kvp = $_.Split('=')
           if ($kvp.Count -gt 1) {
               $key = $kvp[0] -replace "\.", "_";
