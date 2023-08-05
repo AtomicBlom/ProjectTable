@@ -1,9 +1,9 @@
 package com.github.atomicblom.projecttable.api;
 
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
-import net.minecraft.block.Block;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 public interface ICraftingManagerIngredientOrResult extends ICraftingManagerResult
 {

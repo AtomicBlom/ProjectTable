@@ -16,8 +16,9 @@
 
 package com.github.atomicblom.projecttable.api.ingredient;
 
+
 import com.google.common.collect.ImmutableList;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * The IIngredient is implemented to submit recipes to Steam and Steel machines.

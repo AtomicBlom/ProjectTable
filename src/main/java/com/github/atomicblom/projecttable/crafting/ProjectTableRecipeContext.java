@@ -7,10 +7,10 @@ import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
 import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.client.api.ProjectTableRecipe;
 import com.google.common.collect.Lists;
-import net.minecraft.block.Block;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +26,7 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
 {
     private final CraftingManager parent;
     private final ProjectTableManager projectTableManager;
-    private ITextComponent label = null;
+    private Component label = null;
     private final List<IIngredient> ingredients = Lists.newArrayList();
     private String id = "unidentified";
     private String source = "fluent:no source specified";
@@ -39,7 +39,7 @@ class ProjectTableRecipeContext implements ICraftingManagerIngredientOrResult, I
     }
 
     @Override
-    public ICraftingManagerIngredients withLabel(ITextComponent label)
+    public ICraftingManagerIngredients withLabel(Component label)
     {
         this.label = label;
         return this;

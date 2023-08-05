@@ -6,12 +6,13 @@ import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.NBTUtil;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.ItemHandlerHelper;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryManager;
 
 import javax.annotation.Nullable;
@@ -36,7 +37,7 @@ public enum ProjectTableManager
         }
 
         for (ItemStack itemStack : recipe.output) {
-            if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(itemStack.getItem()) || itemStack.isEmpty()) {
+            if (!ForgeRegistries.ITEMS.containsValue(itemStack.getItem()) || itemStack.isEmpty()) {
                 problems.add(new IngredientProblem(recipe.getId(), recipe.getSource(), "Invalid ItemStack: " + itemStack.toString()));
             }
         }
@@ -73,15 +74,15 @@ public enum ProjectTableManager
             {
                 for (final ItemStack playerItem : compactedInventoryItems) {
                     if (durabilityRequired > 0) { //Item is damageable, ignore metadata, take into account durability
-                        if (recipeInput.getItem() == playerItem.getItem() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
-                            durabilityRequired -= (recipeInput.getMaxDamage() - recipeInput.getDamage());
+                        if (recipeInput.getItem() == playerItem.getItem() && ItemStack.isSameItemSameTags(recipeInput, playerItem)) {
+                            durabilityRequired -= (recipeInput.getMaxDamage() - recipeInput.getDamageValue());
                             itemMatched = true;
                             itemsAvailable += playerItem.getCount();
                         }
                     } else {
                         //FIXME: Adjust for Tags
                         //if (recipeInput.getItem() == playerItem.getItem() && recipeInput.getMetadata() == playerItem.getMetadata() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
-                        if (recipeInput.getItem() == playerItem.getItem() && ItemStack.areItemStackTagsEqual(recipeInput, playerItem)) {
+                        if (recipeInput.getItem() == playerItem.getItem() && ItemStack.isSameItemSameTags(recipeInput, playerItem)) {
                             itemMatched = true;
                             itemsAvailable += playerItem.getCount();
                         }
@@ -97,16 +98,16 @@ public enum ProjectTableManager
         return true;
     }
 
-    public boolean canCraftRecipe(ProjectTableRecipe recipe, PlayerInventory playerInventory)
+    public boolean canCraftRecipe(ProjectTableRecipe recipe, Inventory playerInventory)
     {
         final List<ItemStack> compactedInventoryItems = getCompactedInventoryItems(playerInventory);
         return canCraftRecipe(recipe, compactedInventoryItems);
     }
 
-    public List<ItemStack> getCompactedInventoryItems(PlayerInventory inventorySlots) {
+    public List<ItemStack> getCompactedInventoryItems(Inventory inventorySlots) {
         List<ItemStack> usableItems = Lists.newArrayList();
 
-        Stream<ItemStack> stream = Stream.concat(inventorySlots.mainInventory.stream(), Stream.of(inventorySlots.getItemStack()));
+        Stream<ItemStack> stream = Stream.concat(inventorySlots.items.stream(), Stream.of(inventorySlots.getSelected()));
         for (final ItemStack itemStack : (Iterable<ItemStack>)stream::iterator)
         {
             if (itemStack == null || itemStack.isEmpty())
@@ -117,7 +118,7 @@ public enum ProjectTableManager
             boolean itemMatched = false;
             for (final ItemStack existingItemStack : usableItems) {
                 //FIXME: Adjust for tags
-                if (existingItemStack.getItem() == itemStack.getItem() && ItemStack.areItemStackTagsEqual(existingItemStack, itemStack))
+                if (existingItemStack.getItem() == itemStack.getItem() && ItemStack.isSameItemSameTags(existingItemStack, itemStack))
                 {
                     itemMatched = true;
                     existingItemStack.grow(itemStack.getCount());
@@ -146,7 +147,7 @@ public enum ProjectTableManager
         ProjectTableMod.logger.info("Reset client recipe list to {} entries", initialSet.size());
     }
 
-    public void craftRecipe(ProjectTableRecipe recipe, PlayerInventory playerInventory) {
+    public void craftRecipe(ProjectTableRecipe recipe, Inventory playerInventory) {
         for (final IIngredient ingredient : recipe.getInput())
         {
             int quantityToConsume = ingredient.getQuantityConsumed();
@@ -164,12 +165,12 @@ public enum ProjectTableManager
 
                 if (durabilityToConsume > 0) {
                     durabilityToConsume -= clearMatchingDurability(playerInventory, itemStack.getItem(), durabilityToConsume, itemStack.getTag());
-                    playerInventory.markDirty();
+                    playerInventory.setChanged();
                 }
 
                 if (quantityToConsume > 0) {
-                    quantityToConsume -= ItemStackHelper.func_233534_a_(playerInventory, itemStack1 -> itemStack1.isItemEqual(itemStack), quantityToConsume, false);
-                    playerInventory.markDirty();
+                    quantityToConsume -= ContainerHelper.clearOrCountMatchingItems(playerInventory, itemStack1 -> itemStack1.sameItem(itemStack), quantityToConsume, false);
+                    playerInventory.setChanged();
                 }
             }
         }
@@ -178,33 +179,33 @@ public enum ProjectTableManager
         {
             final ItemStack copy = itemStack.copy();
 
-            if (!playerInventory.addItemStackToInventory(copy))
+            if (!playerInventory.add(copy))
             {
-                playerInventory.player.dropItem(copy, true);
+                playerInventory.player.drop(copy, true);
             }
             else
             {
-                playerInventory.markDirty();
+                playerInventory.setChanged();
             }
         }
     }
 
-    private int clearMatchingDurability(PlayerInventory playerInventory, @Nullable Item itemIn, int durability, @Nullable CompoundNBT itemNBT)
+    private int clearMatchingDurability(Inventory playerInventory, @Nullable Item itemIn, int durability, @Nullable CompoundTag itemNBT)
     {
         if (durability <= 0) return 0;
 
         int durabilityConsumed = 0;
 
-        for (int j = 0; j < playerInventory.getSizeInventory(); ++j)
+        for (int j = 0; j < playerInventory.getContainerSize(); ++j)
         {
-            ItemStack itemstack = playerInventory.getStackInSlot(j);
+            ItemStack itemstack = playerInventory.getItem(j);
 
-            if (!itemstack.isEmpty() && (itemIn == null || itemstack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, itemstack.getTag(), true)))
+            if (!itemstack.isEmpty() && (itemIn == null || itemstack.getItem() == itemIn) && (itemNBT == null || itemNBT.equals(itemstack.getTag())))
             {
-                int thisItemDurabilityToRemove = Math.min(durability - durabilityConsumed, itemstack.getMaxDamage() - itemstack.getDamage() + 1);
+                int thisItemDurabilityToRemove = Math.min(durability - durabilityConsumed, itemstack.getMaxDamage() - itemstack.getDamageValue() + 1);
                 durabilityConsumed += thisItemDurabilityToRemove;
 
-                itemstack.damageItem(thisItemDurabilityToRemove, playerInventory.player, (t) -> {});
+                itemstack.hurtAndBreak(thisItemDurabilityToRemove, playerInventory.player, (t) -> {});
 
                 if (durabilityConsumed >= durability)
                 {
@@ -213,14 +214,14 @@ public enum ProjectTableManager
             }
         }
 
-        ItemStack mouseHeldItemStack = playerInventory.getItemStack();
-        if (!mouseHeldItemStack.isEmpty() && (itemIn == null || mouseHeldItemStack.getItem() == itemIn) && (itemNBT == null || NBTUtil.areNBTEquals(itemNBT, mouseHeldItemStack.getTag(), true)))
+        ItemStack mouseHeldItemStack = playerInventory.getSelected();
+        if (!mouseHeldItemStack.isEmpty() && (itemIn == null || mouseHeldItemStack.getItem() == itemIn) && (itemNBT == null || itemNBT.equals(mouseHeldItemStack.getTag())))
         {
-            int heldItemDurabilityToRemove = Math.min(durability - durabilityConsumed, mouseHeldItemStack.getMaxDamage() - mouseHeldItemStack.getDamage());
+            int heldItemDurabilityToRemove = Math.min(durability - durabilityConsumed, mouseHeldItemStack.getMaxDamage() - mouseHeldItemStack.getDamageValue());
             durabilityConsumed += heldItemDurabilityToRemove;
 
-            mouseHeldItemStack.damageItem(heldItemDurabilityToRemove, playerInventory.player, (t) -> {});
-            playerInventory.setItemStack(mouseHeldItemStack);
+            mouseHeldItemStack.hurtAndBreak(heldItemDurabilityToRemove, playerInventory.player, (t) -> {});
+            playerInventory.setPickedItem(mouseHeldItemStack);
 
             if (durabilityConsumed >= durability) {
                 return durability - durabilityConsumed;

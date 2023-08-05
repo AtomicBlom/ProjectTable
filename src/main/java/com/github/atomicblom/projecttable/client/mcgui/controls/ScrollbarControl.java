@@ -7,7 +7,7 @@ import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.events.ICurrentValueChangedEventListener;
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +37,12 @@ public class ScrollbarControl extends ControlBase
     }
 
     @Override
-    public void draw(MatrixStack matrixStack)
+    public void draw(PoseStack PoseStack)
     {
         if (!enabled) {
             return;
         }
-        getGuiRenderer().drawComponentTextureWithOffset(matrixStack, this, currentTexture, 0, getHandleTop());
+        getGuiRenderer().drawComponentTextureWithOffset(PoseStack, this, currentTexture, 0, getHandleTop());
     }
 
     @SuppressWarnings("unused")

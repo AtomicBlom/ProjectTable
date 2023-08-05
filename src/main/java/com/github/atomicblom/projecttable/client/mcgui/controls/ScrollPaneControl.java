@@ -7,7 +7,7 @@ import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
 import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,7 +112,7 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
     }
 
     @Override
-    public void draw(MatrixStack matrixStack)
+    public void draw(PoseStack PoseStack)
     {
         if (itemRenderers.length == 0 || items.isEmpty()) {
             return;
@@ -176,7 +176,7 @@ public class ScrollPaneControl<TModel, TChildComponentTemplate extends ControlBa
 
         previousItemIndex = itemIndex;
 
-        super.draw(matrixStack);
+        super.draw(PoseStack);
 
         getGuiRenderer().endViewport();
     }

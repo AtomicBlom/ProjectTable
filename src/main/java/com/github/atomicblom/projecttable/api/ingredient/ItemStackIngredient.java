@@ -18,8 +18,9 @@ package com.github.atomicblom.projecttable.api.ingredient;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryManager;
 
 /**
@@ -99,7 +100,8 @@ public class ItemStackIngredient implements IIngredient
 
     @Override
     public IngredientProblem assertValid(String id, String source) {
-        if (!RegistryManager.ACTIVE.getRegistry(Item.class).containsValue(this.itemStack.getItem()) || this.itemStack.isEmpty()) {
+
+        if (!ForgeRegistries.ITEMS.containsValue(this.itemStack.getItem()) || this.itemStack.isEmpty()) {
             return new IngredientProblem(id, source, "Invalid ItemStack: " + this.itemStack.toString());
         }
         return null;

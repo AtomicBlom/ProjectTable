@@ -5,7 +5,7 @@ import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 import com.github.atomicblom.projecttable.api.ingredient.ItemStackIngredient;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 /**
  * Created by codew on 26/01/2016.
@@ -13,9 +13,9 @@ import net.minecraft.network.PacketBuffer;
 public class ItemStackIngredientSerializer implements IIngredientSerializer
 {
     @Override
-    public IIngredient deserialize(PacketBuffer buffer)
+    public IIngredient deserialize(FriendlyByteBuf buffer)
     {
-        ItemStackIngredient itemStackIngredient = new ItemStackIngredient(buffer.readItemStack());
+        ItemStackIngredient itemStackIngredient = new ItemStackIngredient(buffer.readItem());
         int consumedSize = buffer.readInt();
         if (consumedSize != itemStackIngredient.getQuantityConsumed()) {
             itemStackIngredient.overrideAmountConsumed(consumedSize);
@@ -26,11 +26,11 @@ public class ItemStackIngredientSerializer implements IIngredientSerializer
     }
 
     @Override
-    public void serialize(IIngredient ingredient, PacketBuffer buffer)
+    public void serialize(IIngredient ingredient, FriendlyByteBuf buffer)
     {
         if (!(ingredient instanceof ItemStackIngredient)) throw new ProjectTableException("Attempt to deserialize an ingredient that is not an ItemStackIngredient");
         final ItemStackIngredient itemStackIngredient = (ItemStackIngredient) ingredient;
-        buffer.writeItemStack(itemStackIngredient.getItemStack())
+        buffer.writeItem(itemStackIngredient.getItemStack())
                 .writeInt(itemStackIngredient.getQuantityConsumed())
                 .writeInt(itemStackIngredient.getDurabilityCost())
                 .writeBoolean(itemStackIngredient.isFluidContainer());

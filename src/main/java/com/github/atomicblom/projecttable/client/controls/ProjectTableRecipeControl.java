@@ -14,13 +14,12 @@ import com.github.atomicblom.projecttable.client.model.ProjectTableRecipeInstanc
 import com.github.atomicblom.projecttable.gui.events.IRecipeCraftingEventListener;
 import com.github.atomicblom.projecttable.util.ItemStackUtils;
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.locale.Language;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,40 +45,39 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
         setHoverTexture(craftableTexture);
         setPressedTexture(uncraftableTexture);
 
-        toolIndicatorLocalized = I18n.format("gui.projecttable:project_table.tool_indicator");
+        toolIndicatorLocalized = Language.getInstance().getOrDefault("gui.projecttable:project_table.tool_indicator");
     }
 
     @Override
-    public void draw(MatrixStack matrixStack) {
+    public void draw(PoseStack PoseStack) {
         if (recipeInstance == null || recipe == null || recipeIngredients == null) { return; }
         setDisabled(!recipeInstance.canCraft());
 
-        super.draw(matrixStack);
+        super.draw(PoseStack);
 
         final GuiRenderer guiRenderer = getGuiRenderer();
-        matrixStack.push();
-        matrixStack.translate(0, 0, 200);
+        PoseStack.pushPose();
+        PoseStack.translate(0, 0, 200);
         RenderSystem.disableDepthTest();
         final ImmutableList<ItemStack> output = recipe.getOutput();
         final ItemStack outputItemStack = output.get(0);
         if (output.size() == 1 && !outputItemStack.isEmpty())
         {
-            RenderHelper.enableStandardItemLighting();
             guiRenderer.renderItem(this, outputItemStack, 2, 3);
-            RenderHelper.disableStandardItemLighting();
 
             int itemCount = outputItemStack.getCount();
 
             final String craftedItemCount = String.format("%d", itemCount);
             final int textWidth = guiRenderer.getStringWidth(craftedItemCount);
 
-            matrixStack.push();
-            matrixStack.translate(0, 0, 200);
+            PoseStack.pushPose();
+            PoseStack.translate(0, 0, 200);
             if (itemCount > 0) {
-                guiRenderer.drawStringWithShadow(matrixStack, this, craftedItemCount, 16 - textWidth + 2, 12, 16777215);
+                guiRenderer.drawStringWithShadow(PoseStack, this, craftedItemCount, 16 - textWidth + 2, 12, 16777215);
             }
-            guiRenderer.drawStringWithShadow(matrixStack, this, recipe.getDisplayName().getString(), 2 + 20, 8, 16777215);
-            matrixStack.pop();
+            var displayName = Language.getInstance().getOrDefault(recipe.getDisplayName().getString());
+            guiRenderer.drawStringWithShadow(PoseStack, this, displayName, 2 + 20, 8, 16777215);
+            PoseStack.popPose();
         }
 
         final int inputItemCount = recipeIngredients.size();
@@ -92,7 +90,7 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
                 continue;
             }
 
-            final ClientWorld world = Minecraft.getInstance().world;
+            final ClientLevel world = Minecraft.getInstance().level;
             assert world != null;
             final long totalWorldTime = world.getGameTime();
             final int renderedItem = (int)((totalWorldTime / 20) % possibleItems.size());
@@ -107,16 +105,16 @@ public class ProjectTableRecipeControl extends ButtonControl implements IGuiTemp
 
             guiRenderer.renderItem(this, possibleItems.get(renderedItem), getBounds().getWidth() - border - (itemSize + padding + 2) * (j + border), padding + border);
 
-            matrixStack.push();
-            matrixStack.translate(0, 0, 200);
+            PoseStack.pushPose();
+            PoseStack.translate(0, 0, 200);
             if (quantityConsumed > 0) {
-                guiRenderer.drawStringWithShadow(matrixStack, this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding + 2) * j - textWidth - border, 12, 16777215);
+                guiRenderer.drawStringWithShadow(PoseStack, this, requiredItemCount, getBounds().getWidth() - border - (itemSize + padding + 2) * j - textWidth - border, 12, 16777215);
             } else {
-                guiRenderer.drawStringWithShadow(matrixStack, this, toolIndicatorLocalized, getBounds().getWidth() - border - (itemSize + padding + 2) * j - textWidth - border, 12, 16777215);
+                guiRenderer.drawStringWithShadow(PoseStack, this, toolIndicatorLocalized, getBounds().getWidth() - border - (itemSize + padding + 2) * j - textWidth - border, 12, 16777215);
             }
-            matrixStack.pop();
+            PoseStack.popPose();
         }
-        matrixStack.pop();
+        PoseStack.popPose();
 
         RenderSystem.enableDepthTest();
     }

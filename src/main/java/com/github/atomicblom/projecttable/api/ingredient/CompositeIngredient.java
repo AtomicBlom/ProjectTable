@@ -2,7 +2,7 @@ package com.github.atomicblom.projecttable.api.ingredient;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;

@@ -7,7 +7,7 @@ import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.events.ICheckboxPressedEventListener;
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
 import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,18 +38,18 @@ public class CheckboxControl extends ControlBase {
     }
 
     @Override
-    public void draw(MatrixStack matrixStack)
+    public void draw(PoseStack PoseStack)
     {
-        super.draw(matrixStack);
+        super.draw(PoseStack);
         if (isDisabled) {
-            getGuiRenderer().drawComponentTexture(matrixStack, this, disabledTexture);
+            getGuiRenderer().drawComponentTexture(PoseStack, this, disabledTexture);
         } else if (currentTexture != null)
         {
-            getGuiRenderer().drawComponentTexture(matrixStack, this, currentTexture);
+            getGuiRenderer().drawComponentTexture(PoseStack, this, currentTexture);
         }
 
         if (this.value) {
-            getGuiRenderer().drawComponentTextureWithOffset(matrixStack, this, activeOverlayTexture, 0, -2);
+            getGuiRenderer().drawComponentTextureWithOffset(PoseStack, this, activeOverlayTexture, 0, -2);
         }
     }
 

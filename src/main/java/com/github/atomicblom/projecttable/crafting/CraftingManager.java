@@ -23,17 +23,17 @@ import com.github.atomicblom.projecttable.api.ingredient.*;
 import com.github.atomicblom.projecttable.client.api.InvalidRecipeException;
 import com.github.atomicblom.projecttable.client.api.ProjectTableManager;
 import com.github.atomicblom.projecttable.networking.SerializationRegistry;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.nbt.*;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.LiteralContents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 
 /**
- * The class that accesses the singleton crafting managers..
+ * The class that accesses the singleton crafting managers.
  *
  * @author Scott Killen
  * @version 1.0
@@ -59,12 +59,12 @@ public enum CraftingManager implements ICraftingManager
                 .setSource("mod:" + modId);
     }
 
-    public void addFromNBT(CompoundNBT nbtValue) {
-        if (!nbtValue.contains("id", Constants.NBT.TAG_STRING)) {
+    public void addFromNBT(CompoundTag nbtValue) {
+        if (!nbtValue.contains("id", Tag.TAG_STRING)) {
             throw new ProjectTableException("NBT did not contain an 'id' tag: " + nbtValue.toString());
         }
 
-        if (!nbtValue.contains("ingredients", Constants.NBT.TAG_LIST)) {
+        if (!nbtValue.contains("ingredients", Tag.TAG_LIST)) {
             throw new ProjectTableException("NBT did not contain an 'ingredients' tag: " + nbtValue.toString());
         }
 
@@ -72,20 +72,20 @@ public enum CraftingManager implements ICraftingManager
                 .setId(nbtValue.getString("id"))
                 .setSource(nbtValue.getString("source"));
 
-        if (nbtValue.contains("label", Constants.NBT.TAG_STRING)) {
-            context.withLabel(new StringTextComponent(nbtValue.getString("label")));
+        if (nbtValue.contains("label", Tag.TAG_STRING)) {
+            context.withLabel(MutableComponent.create(new LiteralContents(nbtValue.getString("label"))));
         }
 
         IIngredient[] ingredientList;
-        if (nbtValue.contains("ingredients", Constants.NBT.TAG_LIST)) {
-            ListNBT ingredients = nbtValue.getList("ingredients", Constants.NBT.TAG_COMPOUND);
+        if (nbtValue.contains("ingredients", Tag.TAG_LIST)) {
+            ListTag ingredients = nbtValue.getList("ingredients", Tag.TAG_COMPOUND);
             ingredientList = new IIngredient[ingredients.size()];
             for (int i = 0; i < ingredients.size(); i++) {
-                CompoundNBT ingredient = (CompoundNBT)ingredients.get(i);
+                CompoundTag ingredient = (CompoundTag)ingredients.get(i);
                 ingredientList[i] = getIngredientFromNBT(ingredient);
             }
-        } else if (nbtValue.contains("ingredients", Constants.NBT.TAG_COMPOUND)) {
-            CompoundNBT ingredient = nbtValue.getCompound("ingredients");
+        } else if (nbtValue.contains("ingredients", Tag.TAG_COMPOUND)) {
+            CompoundTag ingredient = nbtValue.getCompound("ingredients");
             ingredientList = new IIngredient[1];
             ingredientList[0] = getIngredientFromNBT(ingredient);
         } else {
@@ -98,14 +98,14 @@ public enum CraftingManager implements ICraftingManager
 
         context.withIngredients(ingredientList);
 
-        if (nbtValue.contains("crafts", Constants.NBT.TAG_COMPOUND)) {
-            CompoundNBT crafts = nbtValue.getCompound("crafts");
-            context.crafts(ItemStack.read(crafts));
-        } else if (nbtValue.contains("crafts", Constants.NBT.TAG_LIST)) {
-            ListNBT crafts = nbtValue.getList("crafts", Constants.NBT.TAG_COMPOUND);
+        if (nbtValue.contains("crafts", Tag.TAG_COMPOUND)) {
+            CompoundTag crafts = nbtValue.getCompound("crafts");
+            context.crafts(ItemStack.of(crafts));
+        } else if (nbtValue.contains("crafts", Tag.TAG_LIST)) {
+            ListTag crafts = nbtValue.getList("crafts", Tag.TAG_COMPOUND);
             ItemStack[] outputs = new ItemStack[crafts.size()];
             for (int item = 0; item < crafts.size(); item++) {
-                outputs[item] = ItemStack.read(crafts.getCompound(item));
+                outputs[item] = ItemStack.of(crafts.getCompound(item));
             }
             if (outputs.length == 0) {
                 throw new ProjectTableException("NBT was missing craft outputs: " + nbtValue.toString());
@@ -116,38 +116,43 @@ public enum CraftingManager implements ICraftingManager
         }
     }
 
-    private IIngredient getIngredientFromNBT(CompoundNBT ingredient) {
+    private IIngredient getIngredientFromNBT(CompoundTag ingredient) {
         int count = ingredient.getInt("Count");
         if (count < 0) count = 0;
         if (ingredient.getBoolean("tool")) count = 0;
 
         IIngredient result;
 
-        if (ingredient.contains("id", Constants.NBT.TAG_STRING)) {
-            // Item stacks can't have a count > 64 or it gets defaulted to 0 and becomes empty.
+
+        if (ingredient.contains("id", Tag.TAG_STRING)) {
+            // Item stacks can't have a count > 64, or it gets defaulted to 0 and becomes empty.
             ingredient.putInt("Count", 1);
-            ItemStackIngredient itemStackIngredient = new ItemStackIngredient(ItemStack.read(ingredient));
+            ItemStackIngredient itemStackIngredient = new ItemStackIngredient(ItemStack.of(ingredient));
             if (ingredient.contains("Count")) {
                 itemStackIngredient.overrideAmountConsumed(count);
             }
             result = itemStackIngredient;
         }
-        else if (ingredient.contains("itemTag", Constants.NBT.TAG_STRING)) {
+        else if (ingredient.contains("itemTag", Tag.TAG_STRING)) {
             // Tag ingredients aren't based on item stacks and aren't subject to the 64 item limit.
             result = new ItemTagIngredient(
-                    new ResourceLocation(ingredient.getString("itemTag")),
+                    ForgeRegistries.ITEMS.tags().createTagKey(
+                    new ResourceLocation(ingredient.getString("itemTag"))
+                    ),
                     count
             );
         }
-        else if (ingredient.contains("blockTag", Constants.NBT.TAG_STRING)) {
+        else if (ingredient.contains("blockTag", Tag.TAG_STRING)) {
             // Tag ingredients aren't based on item stacks and aren't subject to the 64 item limit.
             result = new BlockTagIngredient(
-                    new ResourceLocation(ingredient.getString("blockTag")),
+                    ForgeRegistries.BLOCKS.tags().createTagKey(
+                    new ResourceLocation(ingredient.getString("blockTag"))
+                    ),
                     count
             );
         }
-        else if (ingredient.contains("compound", Constants.NBT.TAG_LIST)) {
-            ListNBT childIngredients = ingredient.getList("compound", Constants.NBT.TAG_COMPOUND);
+        else if (ingredient.contains("compound", Tag.TAG_LIST)) {
+            ListTag childIngredients = ingredient.getList("compound", Tag.TAG_COMPOUND);
             IIngredient[] ingredientList = new IIngredient[childIngredients.size()];
             for (int i = 0; i < childIngredients.size(); i++) {
                 ingredientList[i] = getIngredientFromNBT(childIngredients.getCompound(i));

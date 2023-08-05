@@ -4,7 +4,7 @@ import com.github.atomicblom.projecttable.client.mcgui.ControlBase;
 import com.github.atomicblom.projecttable.client.mcgui.GuiRenderer;
 import com.github.atomicblom.projecttable.client.mcgui.GuiTexture;
 import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 public class TexturedPaneControl extends ControlBase
 {
@@ -23,9 +23,9 @@ public class TexturedPaneControl extends ControlBase
     }
 
     @Override
-    public void draw(MatrixStack matrixStack)
+    public void draw(PoseStack PoseStack)
     {
-        getGuiRenderer().drawComponentTexture(matrixStack, this, texture);
-        super.draw(matrixStack);
+        getGuiRenderer().drawComponentTexture(PoseStack, this, texture);
+        super.draw(PoseStack);
     }
 }

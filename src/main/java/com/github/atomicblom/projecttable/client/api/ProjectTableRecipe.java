@@ -3,16 +3,15 @@ package com.github.atomicblom.projecttable.client.api;
 import com.github.atomicblom.projecttable.ProjectTableException;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
-import com.github.atomicblom.projecttable.networking.PacketBufferExtensions;
+import com.github.atomicblom.projecttable.networking.FriendlyByteBufExtensions;
 import com.github.atomicblom.projecttable.networking.SerializationRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.network.datasync.DataSerializers;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.world.item.ItemStack;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -25,11 +24,11 @@ public class ProjectTableRecipe
     ImmutableList<ItemStack> output;
     private final String source;
     ImmutableList<IIngredient> input;
-    private ITextComponent displayName;
+    private Component displayName;
     private String renderText;
     private final String id;
 
-    public ProjectTableRecipe(String id, String source, Collection<ItemStack> output, ITextComponent displayName, Collection<IIngredient> input)
+    public ProjectTableRecipe(String id, String source, Collection<ItemStack> output, Component displayName, Collection<IIngredient> input)
     {
         this.id = id;
         this.source = source;
@@ -59,12 +58,12 @@ public class ProjectTableRecipe
         return input;
     }
 
-    public ITextComponent getDisplayName()
+    public Component getDisplayName()
     {
         return displayName;
     }
 
-    public void setDisplayName(ITextComponent displayName)
+    public void setDisplayName(Component displayName)
     {
         this.displayName = displayName;
     }
@@ -79,10 +78,10 @@ public class ProjectTableRecipe
         this.renderText = renderText;
     }
 
-    public static ProjectTableRecipe readFromBuffer(PacketBuffer buf)
+    public static ProjectTableRecipe readFromBuffer(FriendlyByteBuf buf)
     {
-        String id = buf.readString(255);
-        String source = buf.readString(255);
+        String id = buf.readUtf(255);
+        String source = buf.readUtf(255);
 
         byte inputItemStackCount = buf.readByte();
         List<IIngredient> input = Lists.newArrayList();
@@ -95,15 +94,15 @@ public class ProjectTableRecipe
         List<ItemStack> output = Lists.newArrayList();
         for (int i = 0; i < outputItemStackCount; ++i)
         {
-            output.add(PacketBufferExtensions.readLargeItemStackFromBuffer(buf));
+            output.add(FriendlyByteBufExtensions.readLargeItemStackFromBuffer(buf));
         }
 
-        final ITextComponent displayName = DataSerializers.TEXT_COMPONENT.read(buf);
+        final Component displayName = EntityDataSerializers.COMPONENT.read(buf);
         return new ProjectTableRecipe(id, source, output, displayName, input);
     }
 
-    private static IIngredient readIngredient(PacketBuffer buf) {
-        final String ingredientType = DataSerializers.STRING.read(buf);
+    private static IIngredient readIngredient(FriendlyByteBuf buf) {
+        final String ingredientType = EntityDataSerializers.STRING.read(buf);
         final IIngredientSerializer serializer = SerializationRegistry.INSTANCE.getSerializer(ingredientType);
         if (serializer == null) {
             throw new ProjectTableException("Unknown Ingredient serializer: " + ingredientType);
@@ -111,10 +110,10 @@ public class ProjectTableRecipe
         return serializer.deserialize(buf);
     }
 
-    public void writeToBuffer(PacketBuffer buf)
+    public void writeToBuffer(FriendlyByteBuf buf)
     {
-        buf.writeString(id);
-        buf.writeString(source);
+        buf.writeUtf(id);
+        buf.writeUtf(source);
 
         buf.writeByte(input.size());
         for (final IIngredient itemStack : input)
@@ -124,15 +123,16 @@ public class ProjectTableRecipe
         buf.writeByte(output.size());
         for (final ItemStack itemStack : output)
         {
-            PacketBufferExtensions.writeLargeItemStackToBuffer(buf, itemStack);
+            FriendlyByteBufExtensions.writeLargeItemStackToBuffer(buf, itemStack);
         }
-        DataSerializers.TEXT_COMPONENT.write(buf, displayName);
+
+        EntityDataSerializers.COMPONENT.write(buf, displayName);
     }
 
-    private void writeIngredient(IIngredient ingredient, PacketBuffer buf)
+    private void writeIngredient(IIngredient ingredient, FriendlyByteBuf buf)
     {
         final String name = ingredient.getClass().getName();
-        buf.writeString(name);
+        buf.writeUtf(name);
         final IIngredientSerializer serializer = SerializationRegistry.INSTANCE.getSerializer(ingredient.getClass().getName());
         if (serializer == null) {
             throw new ProjectTableException("Unknown Ingredient serializer: " + ingredient.getClass().getName());

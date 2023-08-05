@@ -1,8 +1,8 @@
 package com.github.atomicblom.projecttable.api;
 
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.network.chat.Component;
 
 public interface ICraftingManagerIngredientsOrLabel extends ICraftingManagerIngredients
 {
-    ICraftingManagerIngredients withLabel(ITextComponent label);
+    ICraftingManagerIngredients withLabel(Component label);
 }

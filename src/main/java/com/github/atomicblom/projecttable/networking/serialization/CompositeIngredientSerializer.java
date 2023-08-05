@@ -6,7 +6,7 @@ import com.github.atomicblom.projecttable.api.ingredient.CompositeIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredient;
 import com.github.atomicblom.projecttable.api.ingredient.IIngredientSerializer;
 import com.github.atomicblom.projecttable.networking.SerializationRegistry;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 /**
  * Created by codew on 26/01/2016.
@@ -14,12 +14,12 @@ import net.minecraft.network.PacketBuffer;
 public class CompositeIngredientSerializer implements IIngredientSerializer
 {
     @Override
-    public IIngredient deserialize(PacketBuffer buffer)
+    public IIngredient deserialize(FriendlyByteBuf buffer)
     {
         int compositeIngredientCount = buffer.readInt();
         IIngredient[] childIngredients = new IIngredient[compositeIngredientCount];
         for (int i = 0; i < compositeIngredientCount; i++) {
-            String serializerName = buffer.readString(32767);
+            String serializerName = buffer.readUtf(32767);
             IIngredientSerializer serializer = SerializationRegistry.INSTANCE.getSerializer(serializerName);
             childIngredients[i] = serializer.deserialize(buffer);
         }
@@ -32,7 +32,7 @@ public class CompositeIngredientSerializer implements IIngredientSerializer
     }
 
     @Override
-    public void serialize(IIngredient ingredient, PacketBuffer buffer)
+    public void serialize(IIngredient ingredient, FriendlyByteBuf buffer)
     {
         if (!(ingredient instanceof CompositeIngredient)) throw new ProjectTableException("Attempt to deserialize an ingredient that is not an CompositeIngredient");
         final CompositeIngredient compositeIngredient = (CompositeIngredient) ingredient;
@@ -42,7 +42,7 @@ public class CompositeIngredientSerializer implements IIngredientSerializer
         buffer.writeInt(childIngredients.length);
         for (IIngredient childIngredient : childIngredients) {
             final String name = childIngredient.getClass().getName();
-            buffer.writeString(name);
+            buffer.writeUtf(name);
             IIngredientSerializer serializer = SerializationRegistry.INSTANCE.getSerializer(name);
             serializer.serialize(childIngredient, buffer);
         }

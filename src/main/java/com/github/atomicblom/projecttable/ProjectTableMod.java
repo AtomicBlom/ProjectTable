@@ -5,31 +5,26 @@ import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
 import com.github.atomicblom.projecttable.client.ProjectTableGui;
 import com.github.atomicblom.projecttable.client.api.InvalidRecipeException;
 import com.github.atomicblom.projecttable.crafting.CraftingManager;
+import com.github.atomicblom.projecttable.library.BlockLibrary;
 import com.github.atomicblom.projecttable.library.ContainerTypeLibrary;
+import com.github.atomicblom.projecttable.library.ItemLibrary;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.github.atomicblom.projecttable.networking.ReplaceProjectTableRecipesPacket;
 import com.github.atomicblom.projecttable.registration.ModCrafting;
 import com.google.common.collect.Lists;
-import com.mojang.bridge.game.GameVersion;
-import net.minecraft.client.gui.ScreenManager;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.MinecraftVersion;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.StartupMessageManager;
-import net.minecraftforge.fml.VersionChecker;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
+import net.minecraftforge.fml.event.lifecycle.*;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
-import net.minecraftforge.versions.forge.ForgeVersion;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,23 +40,24 @@ public class ProjectTableMod
 
     public static Logger logger = LogManager.getLogger(MODID);
     public static boolean IS_CI_BUILD = false;
-    public static boolean USE_DOT_TWO_GUI = false;
 
     public ProjectTableMod() {
         if (Boolean.getBoolean("@IS_CI_BUILD@")) {
             IS_CI_BUILD = true;
         }
 
-        GameVersion gameVersion = MinecraftVersion.GAME_VERSION;
-        USE_DOT_TWO_GUI = gameVersion.getReleaseTarget().equals("1.16.2");
         instance = this;
         final FMLJavaModLoadingContext javaModLoadingContext = FMLJavaModLoadingContext.get();
         IEventBus eventBus = javaModLoadingContext.getModEventBus();
         eventBus.addListener(this::setup);
         eventBus.addListener(this::onIMCEvent);
         eventBus.addListener(this::onEnqueueIMCEvent);
-        eventBus.addListener(this::onClientSetup);
+        eventBus.addListener(this::onLoadComplete);
         eventBus.register(ProjectTableConfig.class);
+
+        BlockLibrary.BLOCKS.register(eventBus);
+        ItemLibrary.ITEMS.register(eventBus);
+        ContainerTypeLibrary.MENUS.register(eventBus);
 
         final ModLoadingContext modLoadingContext1 = ModLoadingContext.get();
         modLoadingContext1.registerConfig(ModConfig.Type.COMMON, ProjectTableConfig.commonSpec);
@@ -83,9 +79,8 @@ public class ProjectTableMod
         network.registerMessage(packetId++, ProjectTableCraftPacket.class, ProjectTableCraftPacket::serialize, ProjectTableCraftPacket::deserialize, ProjectTableCraftPacket::received);
     }
 
-    private void onClientSetup(final FMLClientSetupEvent event) {
-        logger.info("Got game settings {}", event.getMinecraftSupplier().get().gameSettings);
-        ScreenManager.registerFactory(ContainerTypeLibrary.projectTableContainer, ProjectTableGui::new);
+    private void onLoadComplete(final FMLLoadCompleteEvent event) {
+        MenuScreens.register(ContainerTypeLibrary.projectTableContainer.get(), ProjectTableGui::new);
     }
 
     public void onEnqueueIMCEvent(InterModEnqueueEvent event) {
@@ -105,9 +100,9 @@ public class ProjectTableMod
             for (InterModComms.IMCMessage message : messages) {
                 try {
                     Object o = message.getMessageSupplier().get();
-                    if (!(o instanceof CompoundNBT)) continue;
+                    if (!(o instanceof CompoundTag)) continue;
 
-                    CompoundNBT nbt = (CompoundNBT)o;
+                    CompoundTag nbt = (CompoundTag)o;
                     if (!nbt.contains("source")) {
                         nbt.putString("source", "imc:" + message.getSenderModId());
                     }

@@ -4,14 +4,14 @@ import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
 import com.github.atomicblom.projecttable.client.mcgui.util.Point;
 import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nullable;
@@ -21,7 +21,7 @@ public class GuiRenderer
 {
     private final Minecraft client;
     private final TextureManager textureManager;
-    private final FontRenderer fontRenderer;
+    private final Font fontRenderer;
     private final ItemRenderer itemRenderer;
 
     @Nullable
@@ -31,7 +31,7 @@ public class GuiRenderer
     {
         this.client = gui.getMinecraft();
         this.textureManager = this.client.textureManager;
-        this.fontRenderer = this.client.fontRenderer;
+        this.fontRenderer = this.client.font;
         this.itemRenderer = this.client.getItemRenderer();
     }
 
@@ -40,7 +40,7 @@ public class GuiRenderer
         return textureManager;
     }
 
-    public FontRenderer getFontRenderer()
+    public Font getFontRenderer()
     {
         return fontRenderer;
     }
@@ -55,10 +55,8 @@ public class GuiRenderer
     /////////////////////////////////////////////////////////////////////////////
     private void verifyTexture(GuiTexture texture)
     {
-        if (!texture.equals(currentTexture)) {
-            currentTexture = texture;
-            textureManager.bindTexture(texture.getTextureLocation());
-        }
+        currentTexture = texture;
+        RenderSystem.setShaderTexture(0, texture.getTextureLocation());
     }
 
     public void notifyTextureChanged() {
@@ -68,33 +66,33 @@ public class GuiRenderer
     /////////////////////////////////////////////////////////////////////////////
     // Image rendering
     /////////////////////////////////////////////////////////////////////////////
-    public void drawModelRectWithCustomSizedTexture(MatrixStack matrixStack, ControlBase control, GuiTexture texture)
+    public void drawModelRectWithCustomSizedTexture(PoseStack PoseStack, ControlBase control, GuiTexture texture)
     {
-        drawModelRectWithCustomSizedTexture(matrixStack, control, texture, 0, 0);
+        drawModelRectWithCustomSizedTexture(PoseStack, control, texture, 0, 0);
     }
 
-    public void drawModelRectWithCustomSizedTexture(MatrixStack matrixStack, ControlBase control, GuiTexture texture, int offsetX, int offsetY)
+    public void drawModelRectWithCustomSizedTexture(PoseStack PoseStack, ControlBase control, GuiTexture texture, int offsetX, int offsetY)
     {
         final IReadablePoint controlLocation = getControlLocation(control);
         verifyTexture(texture);
         final IReadableRectangle componentSubtexture = texture.getBounds();
-        AbstractGui.blit(
-                matrixStack,
+        GuiComponent.blit(
+                PoseStack,
                 controlLocation.getX() + offsetX, controlLocation.getY() + offsetY,
                 componentSubtexture.getX(), componentSubtexture.getY(),
                 componentSubtexture.getWidth(), componentSubtexture.getHeight(),
                 texture.getWidth(), texture.getHeight());
     }
 
-    public void drawComponentTexture(MatrixStack matrixStack, ControlBase control, GuiTexture texture)
+    public void drawComponentTexture(PoseStack PoseStack, ControlBase control, GuiTexture texture)
     {
         verifyTexture(texture);
-        drawModelRectWithCustomSizedTexture(matrixStack, control, texture, 0, 0);
+        drawModelRectWithCustomSizedTexture(PoseStack, control, texture, 0, 0);
     }
 
-    public void drawComponentTextureWithOffset(MatrixStack matrixStack, ControlBase control, GuiTexture texture, int offsetX, int offsetY)
+    public void drawComponentTextureWithOffset(PoseStack PoseStack, ControlBase control, GuiTexture texture, int offsetX, int offsetY)
     {
-        drawModelRectWithCustomSizedTexture(matrixStack, control, texture, offsetX, offsetY);
+        drawModelRectWithCustomSizedTexture(PoseStack, control, texture, offsetX, offsetY);
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -103,25 +101,23 @@ public class GuiRenderer
     public void renderItem(ControlBase control, ItemStack itemStack, int x, int y)
     {
         final IReadablePoint controlLocation = getControlLocation(control);
-        RenderHelper.enableStandardItemLighting();
-        itemRenderer.renderItemIntoGUI(itemStack, controlLocation.getX() + x, controlLocation.getY() + y);
-        RenderHelper.disableStandardItemLighting();
+        itemRenderer.renderAndDecorateItem(itemStack, controlLocation.getX() + x, controlLocation.getY() + y);
         notifyTextureChanged();
     }
 
     /////////////////////////////////////////////////////////////////////////////
     // Text Rendering
     /////////////////////////////////////////////////////////////////////////////
-    public void drawStringWithShadow(MatrixStack matrixStack, ControlBase control, String text, int x, int y, int colour)
+    public void drawStringWithShadow(PoseStack PoseStack, ControlBase control, String text, int x, int y, int colour)
     {
         final IReadablePoint controlLocation = getControlLocation(control);
-        fontRenderer.drawStringWithShadow(matrixStack, text, controlLocation.getX() + x, controlLocation.getY() + y, colour);
+        fontRenderer.drawShadow(PoseStack, text, controlLocation.getX() + x, controlLocation.getY() + y, colour);
         notifyTextureChanged();
     }
 
     public int getStringWidth(String text)
     {
-        return fontRenderer.getStringWidth(text);
+        return fontRenderer.width(text);
     }
 
 
@@ -134,9 +130,9 @@ public class GuiRenderer
         final IReadablePoint controlLocation = getControlLocation(control);
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
 
-        final double scaleW = client.getMainWindow().getGuiScaleFactor();
-        final double scaleH = client.getMainWindow().getGuiScaleFactor();
-        final int displayHeight = client.getMainWindow().getHeight();
+        final double scaleW = client.getWindow().getGuiScale();
+        final double scaleH = client.getWindow().getGuiScale();
+        final int displayHeight = client.getWindow().getHeight();
 
         final int x = (int) ((controlLocation.getX() + bounds.getX()) * scaleW);
         final int y = displayHeight - ((int) (controlLocation.getY() * scaleH) + (int) (bounds.getHeight() * scaleH));

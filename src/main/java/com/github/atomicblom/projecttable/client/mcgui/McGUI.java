@@ -19,28 +19,31 @@ package com.github.atomicblom.projecttable.client.mcgui;
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadablePoint;
 import com.github.atomicblom.projecttable.client.mcgui.util.Point;
 import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.locale.Language;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 
-public abstract class McGUI<T extends Container> extends ContainerScreen<T>
+public abstract class McGUI<T extends AbstractContainerMenu> extends AbstractContainerScreen<T>
 {
     private static final int TEXT_COLOR = 4210752;
     private static final String LOCATION = "textures/gui/";
     private static final String FILE_EXTENSION = ".png";
-    private static final ITextComponent INVENTORY = new TranslationTextComponent("inventory.inventory");
+    private static final Component INVENTORY = MutableComponent.create(new TranslatableContents("inventory.inventory"));
     private final String modId = "";
     private ControlBase rootControl = null;
 
-    protected McGUI(T container, PlayerInventory playerInventory, ITextComponent title)
+    protected McGUI(T container, Inventory playerInventory, Component title)
     {
         super(container, playerInventory, title);
-        this.addListener(this);
+        this.addRenderableOnly(this);
     }
 
     protected abstract ResourceLocation getResourceLocation(String path);
@@ -56,21 +59,23 @@ public abstract class McGUI<T extends Container> extends ContainerScreen<T>
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseZ)
+    protected void renderLabels(PoseStack PoseStack, int mouseX, int mouseZ)
     {
-        final String name = I18n.format(getInventoryName());
+        final String name = Language.getInstance().getOrDefault(getInventoryName());
 
-        font.drawString(matrixStack, name, xSize / 2.0f - font.getStringWidth(name) / 2.0f, 6, TEXT_COLOR);
-        font.func_243246_a(matrixStack, INVENTORY, 8, ySize - 96 + 2, TEXT_COLOR);
+        font.draw(PoseStack, name, imageWidth / 2.0f - font.width(name) / 2.0f, 6, TEXT_COLOR);
+        font.draw(PoseStack, INVENTORY, (float)8, (float)(imageHeight - 96 + 2), TEXT_COLOR);
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(MatrixStack matrixStack, float partialTicks, int mouseX, int mouseY) {
-        final int xStart = (width - xSize) / 2;
-        final int yStart = (height - ySize) / 2;
+    protected void renderBg(PoseStack PoseStack, float partialTicks, int mouseX, int mouseY) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        final int xStart = (width - imageWidth) / 2;
+        final int yStart = (height - imageHeight) / 2;
 
         rootControl.setLocation(xStart, yStart);
-        rootControl.draw(matrixStack);
+        rootControl.draw(PoseStack);
     }
 
 
@@ -107,7 +112,7 @@ public abstract class McGUI<T extends Container> extends ContainerScreen<T>
     }
 
     private IReadablePoint getGuiMousePointInternal(double mouseX, double mouseY) {
-        return new Point((int)mouseX - (width - xSize) / 2, (int)mouseY - (height - ySize) / 2);
+        return new Point((int)mouseX - (width - imageWidth) / 2, (int)mouseY - (height - imageHeight) / 2);
     }
 
     @Override

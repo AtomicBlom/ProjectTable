@@ -2,7 +2,7 @@ package com.github.atomicblom.projecttable.client.mcgui;
 
 import com.github.atomicblom.projecttable.client.mcgui.util.IReadableRectangle;
 import com.github.atomicblom.projecttable.client.mcgui.util.Rectangle;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class GuiTexture
 {

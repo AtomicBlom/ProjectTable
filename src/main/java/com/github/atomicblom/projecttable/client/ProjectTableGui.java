@@ -17,13 +17,14 @@ import com.github.atomicblom.projecttable.client.model.ProjectTableRecipeInstanc
 import com.github.atomicblom.projecttable.inventory.ProjectTableContainer;
 import com.github.atomicblom.projecttable.networking.ProjectTableCraftPacket;
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,14 +36,14 @@ import java.util.stream.Collectors;
 
 public class ProjectTableGui extends McGUI<ProjectTableContainer>
 {
-    private static final ITextComponent showOnlyCraftableComponentText = new TranslationTextComponent("gui.projecttable:project_table.show_only_craftable");
+    private static final Component showOnlyCraftableComponentText = MutableComponent.create(new TranslatableContents("gui.projecttable:project_table.show_only_craftable"));
     private static final String LOCATION = "textures/gui/";
     private static final String FILE_EXTENSION = ".png";
 
     private final GuiTexture guiTexture = new GuiTexture(getResourceLocation("sscraftingtablegui"), 384, 384);
-    private final PlayerInventory playerInventory;
+    private final Inventory playerInventory;
     private int timesInventoryChanged;
-    private TextFieldWidget searchField = null;
+    private EditBox searchField = null;
     private Collection<ProjectTableRecipeInstance> recipeList;
     private final List<ProjectTableRecipeInstance> filteredList;
     private GuiRenderer guiRenderer;
@@ -53,11 +54,11 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     private int _filterFutureId = 0;
     private ScrollPaneControl<ProjectTableRecipeInstance, ProjectTableRecipeControl> recipeListGuiComponent;
 
-    public ProjectTableGui(ProjectTableContainer screenContainer, PlayerInventory inv, ITextComponent title) {
+    public ProjectTableGui(ProjectTableContainer screenContainer, Inventory inv, Component title) {
         super(screenContainer, inv, title);
 
-        xSize = 318;
-        ySize = 227;
+        imageWidth = 318;
+        imageHeight = 227;
 
         recipeList = Lists.newArrayList();
         filteredList = Lists.newArrayList();
@@ -85,12 +86,12 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     {
         super.init();
 
-        searchField = new TextFieldWidget(font, guiLeft + 9, guiTop + 9, 149, font.FONT_HEIGHT, new TranslationTextComponent("gui.projecttable:project_table.search"));
-        searchField.setMaxStringLength(60);
-        searchField.setEnableBackgroundDrawing(false);
+        searchField = new EditBox(font, leftPos + 9, topPos + 9, 149, font.lineHeight, MutableComponent.create(new TranslatableContents("gui.projecttable:project_table.search")));
+        searchField.setMaxLength(60);
+        //searchField.setEnableBackgroundDrawing(false);
         searchField.setVisible(true);
         searchField.setTextColor(16777215);
-        searchField.setEnabled(false);
+        searchField.setEditable(false);
 
         createComponents();
         executor.submit(this::createRecipeList);
@@ -105,8 +106,8 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
                 .sorted((a, b) -> a.getRecipeName().compareToIgnoreCase(b.getRecipeName()))
                 .sequential()
                 .collect(Collectors.toList());
-        searchField.setEnabled(true);
-        searchField.setFocused2(true);
+        searchField.setEditable(true);
+        searchField.setFocus(true);
 
         triggerCreateFilteredList();
     }
@@ -122,14 +123,18 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     private void createFilteredList(int id)
     {
         //long startTime = new Date().getTime();
-        String text = searchField != null ? searchField.getText() : "";
+        String text = searchField != null ? searchField.getValue() : "";
         final String searchText = text.toLowerCase();
 
         //Copy the Player inventory to guard against changes.
-        PlayerInventory inventoryCopy = new PlayerInventory(playerInventory.player);
-        inventoryCopy.copyInventory(playerInventory);
+        Inventory inventoryCopy = new Inventory(playerInventory.player);
+        for (int slot = 0; slot < playerInventory.getContainerSize(); slot++) {
+            inventoryCopy.setItem(slot, playerInventory.getItem(slot).copy());
+        }
+
         final List<ItemStack> compactedInventoryItems = ProjectTableManager.INSTANCE.getCompactedInventoryItems(inventoryCopy);
-        List<ProjectTableRecipeInstance> localFilteredList = this.recipeList.parallelStream()
+        List<ProjectTableRecipeInstance> localFilteredList = this.recipeList
+                .parallelStream()
                 .filter(f -> id == _filterFutureId)
                 .map(r -> updateRecipeInstance(r, compactedInventoryItems))
                 .filter(f -> filterRecipeInstance(f, searchText))
@@ -217,9 +222,7 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     }
 
     @Override
-    public void tick() {
-        super.tick();
-
+    public void containerTick() {
         if (playerInventory.getTimesChanged() != timesInventoryChanged) {
             timesInventoryChanged = playerInventory.getTimesChanged();
             triggerCreateFilteredList();
@@ -227,9 +230,9 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(MatrixStack matrixStack, int mouseX, int mouseZ)
+    protected void renderLabels(PoseStack PoseStack, int mouseX, int mouseZ)
     {
-        font.func_243246_a(matrixStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
+        font.draw(PoseStack, showOnlyCraftableComponentText, 175, 10, 0xE0E0E0);
     }
 
     protected void setRecipeRenderText(ProjectTableRecipeInstance recipeInstance)
@@ -238,8 +241,8 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
         if (projectTableRecipe.getRenderText() == null) {
             String proposedName = projectTableRecipe.getDisplayName().toString();
 
-            if (font.getStringWidth(proposedName) > 64) {
-                while (font.getStringWidth(proposedName + "...") > 64) {
+            if (font.width(proposedName) > 64) {
+                while (font.width(proposedName + "...") > 64) {
                     proposedName = proposedName.substring(0, proposedName.length() - 2);
                 }
                 proposedName += "...";
@@ -251,17 +254,17 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(MatrixStack matrixStack, float partialTicks, int mouseX, int mouseY) {
-        super.drawGuiContainerBackgroundLayer(matrixStack, partialTicks, mouseX, mouseY);
-        searchField.render(matrixStack, mouseX, mouseY, partialTicks);
+    protected void renderBg(PoseStack PoseStack, float partialTicks, int mouseX, int mouseY) {
+        super.renderBg(PoseStack, partialTicks, mouseX, mouseY);
+        searchField.render(PoseStack, mouseX, mouseY, partialTicks);
         guiRenderer.notifyTextureChanged();
     }
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        String s = this.searchField.getText();
+        String s = this.searchField.getValue();
         if (this.searchField.charTyped(codePoint, modifiers)) {
-            if (!Objects.equals(s, this.searchField.getText())) {
+            if (!Objects.equals(s, this.searchField.getValue())) {
                 triggerCreateFilteredList();
             }
 
@@ -273,15 +276,15 @@ public class ProjectTableGui extends McGUI<ProjectTableContainer>
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        String s = this.searchField.getText();
+        String s = this.searchField.getValue();
         if (this.searchField.keyPressed(keyCode, scanCode, modifiers)) {
-            if (!Objects.equals(s, this.searchField.getText())) {
+            if (!Objects.equals(s, this.searchField.getValue())) {
                 triggerCreateFilteredList();
             }
 
             return true;
         } else {
-            return this.searchField.isFocused() && this.searchField.getVisible() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
+            return this.searchField.isFocused() && this.searchField.isVisible() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
         }
     }
 

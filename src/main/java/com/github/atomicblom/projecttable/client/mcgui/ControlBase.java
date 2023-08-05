@@ -1,13 +1,13 @@
 package com.github.atomicblom.projecttable.client.mcgui;
 
 import com.github.atomicblom.projecttable.client.mcgui.util.*;
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.gui.IGuiEventListener;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ControlBase implements IGuiEventListener
+public class ControlBase implements GuiEventListener
 {
     private final Rectangle componentBounds = new Rectangle();
     private final GuiRenderer guiRenderer;
@@ -46,10 +46,10 @@ public class ControlBase implements IGuiEventListener
         onResizeInternal();
     }
 
-    public void draw(MatrixStack matrixStack) {
+    public void draw(PoseStack PoseStack) {
         for (final ControlBase child : children)
         {
-            child.draw(matrixStack);
+            child.draw(PoseStack);
         }
     }
 

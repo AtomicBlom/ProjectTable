@@ -13,16 +13,20 @@ import com.github.atomicblom.projecttable.networking.serialization.CompositeIngr
 import com.github.atomicblom.projecttable.networking.serialization.ItemStackIngredientSerializer;
 import com.github.atomicblom.projecttable.networking.serialization.ItemTagIngredientSerializer;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.*;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.tags.ITagManager;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -68,9 +72,9 @@ public class ModCrafting
                 for (Path file : (Iterable<Path>)files::iterator) {
                     try {
                         String contents = new String(Files.readAllBytes(file));
-                        CompoundNBT tag = JsonToNBT.getTagFromJson(contents);
+                        CompoundTag tag = TagParser.parseTag(contents);
                         String source = "config:" + projectTable.relativize(file).toString();
-                        if (!tag.contains("id", Constants.NBT.TAG_STRING)) {
+                        if (!tag.contains("id", Tag.TAG_STRING)) {
                             tag.putString("id", source.replace(".json", ""));
                         }
                         tag.putString("source", source);
@@ -91,17 +95,17 @@ public class ModCrafting
         try {
 
             if (new File(ProjectTableConfig.CONFIG_DIR, "projectTable.nbt").canRead()) {
-                CompoundNBT nbtTagCompound = CompressedStreamTools.read(new File(ProjectTableConfig.CONFIG_DIR, "projectTable.nbt"));
+                CompoundTag nbtTagCompound = NbtIo.read(new File(ProjectTableConfig.CONFIG_DIR, "projectTable.nbt"));
                 if (nbtTagCompound == null) {
                     ProjectTableMod.logger.warn("projectTable.nbt found, but had no elements inside");
                     return;
                 }
 
-                ListNBT recipeList = nbtTagCompound.getList("recipe", Constants.NBT.TAG_COMPOUND);
+                ListTag recipeList = nbtTagCompound.getList("recipe", Tag.TAG_COMPOUND);
                 for (int i = 0; i < recipeList.size(); i++) {
-                    CompoundNBT recipeNbt = recipeList.getCompound(i);
+                    CompoundTag recipeNbt = recipeList.getCompound(i);
                     String source = "config:projectTable.nbt[" + i + "]";
-                    if (!recipeNbt.contains("id", Constants.NBT.TAG_STRING)) {
+                    if (!recipeNbt.contains("id", Tag.TAG_STRING)) {
                         recipeNbt.putString("id", source);
                     }
                     recipeNbt.putString("source", source);
@@ -116,33 +120,33 @@ public class ModCrafting
     }
 
     private static void addExampleNBTRecipes() {
-        CompoundNBT imgRecipe = new CompoundNBT();
-        ListNBT ingredientList = new ListNBT();
-        ingredientList.add(new ItemStack(Blocks.PUMPKIN, 15).write(new CompoundNBT()));
-        ingredientList.add(new ItemStack(Blocks.DIRT, 15).write(new CompoundNBT()));
+        CompoundTag imgRecipe = new CompoundTag();
+        ListTag ingredientList = new ListTag();
+        ingredientList.add(new ItemStack(Blocks.PUMPKIN, 15).save(new CompoundTag()));
+        ingredientList.add(new ItemStack(Blocks.DIRT, 15).save(new CompoundTag()));
 
-        CompoundNBT compoundIngredient = new CompoundNBT();
+        CompoundTag compoundIngredient = new CompoundTag();
         compoundIngredient.putInt("Count", 10);
-        ListNBT switchIngredients = new ListNBT();
-        switchIngredients.add(new ItemStack(Blocks.ACACIA_FENCE).write(new CompoundNBT()));
-        switchIngredients.add(new ItemStack(Blocks.ACACIA_FENCE_GATE).write(new CompoundNBT()));
+        ListTag switchIngredients = new ListTag();
+        switchIngredients.add(new ItemStack(Blocks.ACACIA_FENCE).save(new CompoundTag()));
+        switchIngredients.add(new ItemStack(Blocks.ACACIA_FENCE_GATE).save(new CompoundTag()));
         compoundIngredient.put("compound", switchIngredients);
 
         ingredientList.add(compoundIngredient);
         imgRecipe.put("ingredients", ingredientList);
-        CompoundNBT craftOutput = new ItemStack(Items.WHEAT, 5).write(new CompoundNBT());
+        CompoundTag craftOutput = new ItemStack(Items.WHEAT, 5).save(new CompoundTag());
         imgRecipe.put("crafts", craftOutput);
         imgRecipe.putString("id", "testimc");
         InterModComms.sendTo(ProjectTableMod.MODID, "ProjectTableRecipe", () -> imgRecipe);
 
-        CompoundNBT imcOreDictRecipe = new CompoundNBT();
-        ListNBT ingredientList2 = new ListNBT();
-        CompoundNBT itemTag = new CompoundNBT();
+        CompoundTag imcOreDictRecipe = new CompoundTag();
+        ListTag ingredientList2 = new ListTag();
+        CompoundTag itemTag = new CompoundTag();
         itemTag.putString("itemTag", "minecraft:planks");
         itemTag.putInt("Count", 16);
         ingredientList2.add(itemTag);
         imcOreDictRecipe.put("ingredients", ingredientList2);
-        CompoundNBT craftOutput2 = new ItemStack(Blocks.OAK_PLANKS, 10).write(new CompoundNBT());
+        CompoundTag craftOutput2 = new ItemStack(Blocks.OAK_PLANKS, 10).save(new CompoundTag());
         imcOreDictRecipe.put("crafts", craftOutput2);
         imcOreDictRecipe.putString("id", "testoredictimc");
 
@@ -150,6 +154,8 @@ public class ModCrafting
     }
 
     private static void addExampleFluentRecipes(ICraftingManager craftingManager) {
+        ITagManager<Block> blockTags = ForgeRegistries.BLOCKS.tags();
+        ITagManager<Item> itemTags = ForgeRegistries.ITEMS.tags();
         craftingManager
                 .addProjectTableRecipe(ProjectTableMod.MODID, "Torches")
                     .withIngredient(Items.STICK, 16)
@@ -219,7 +225,7 @@ public class ModCrafting
                     .crafts(Items.RAIL, 64)
 
                 .addProjectTableRecipe(ProjectTableMod.MODID, "ConcretePowders")
-                    .withIngredient(new ItemTagIngredient(new ResourceLocation("forge:dyes/white"), 8))
+                    .withIngredient(new ItemTagIngredient(itemTags.createTagKey(new ResourceLocation("forge:dyes/white")), 8))
                     .andIngredient(Blocks.SAND, 32)
                     .andIngredient(Blocks.GRAVEL, 32)
                     .crafts(Items.WHITE_CONCRETE_POWDER, 64)
@@ -255,7 +261,7 @@ public class ModCrafting
                     .crafts(Items.PISTON, 64)
 
                 .addProjectTableRecipe(ProjectTableMod.MODID, "StickyPistons")
-                    .withIngredient(new BlockTagIngredient(new ResourceLocation("minecraft:planks"), 192))
+                    .withIngredient(new BlockTagIngredient(BlockTags.PLANKS, 192))
                     .andIngredient(Blocks.COBBLESTONE, 256)
                     .andIngredient(Items.IRON_INGOT, 64)
                     .andIngredient(Items.REDSTONE, 64) //FIXME: TAGS?
@@ -286,22 +292,22 @@ public class ModCrafting
                     .crafts(Items.COOKIE, 64)
 
                 .addProjectTableRecipe(ProjectTableMod.MODID, "Hoppers")
-                    .withIngredient(new BlockTagIngredient(new ResourceLocation("forge:chests/wooden"), 64))
+                    .withIngredient(new BlockTagIngredient(blockTags.createTagKey(new ResourceLocation("forge:chests/wooden")), 64))
                     .andIngredient(Items.IRON_INGOT, 320)
                     .crafts(Items.HOPPER, 64)
 
                 .addProjectTableRecipe(ProjectTableMod.MODID, "HoppersFromRaw")
-                    .withIngredient(new BlockTagIngredient(new ResourceLocation("minecraft:planks"), 512))
+                    .withIngredient(new BlockTagIngredient(BlockTags.PLANKS, 512))
                     .andIngredient(Items.IRON_INGOT, 320)
                     .crafts(Items.HOPPER, 64)
 
                 .addProjectTableRecipe(ProjectTableMod.MODID, "Bookshelves")
-                    .withIngredient(new BlockTagIngredient(new ResourceLocation("minecraft:planks"), 24))
+                    .withIngredient(new BlockTagIngredient(BlockTags.PLANKS, 24))
                     .andIngredient(Items.BOOK, 12)
                     .crafts(Items.BOOKSHELF, 4)
 
                 .addProjectTableRecipe(ProjectTableMod.MODID, "BookshelvesFromRaw")
-                    .withIngredient(new BlockTagIngredient(new ResourceLocation("minecraft:planks"), 24))
+                    .withIngredient(new BlockTagIngredient(BlockTags.PLANKS, 24))
                     .andIngredient(Items.LEATHER, 12)
                     .andIngredient(Items.PAPER, 36)
                     .crafts(Items.BOOKSHELF, 4)

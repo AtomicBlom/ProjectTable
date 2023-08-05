@@ -2,37 +2,36 @@ package com.github.atomicblom.projecttable.api.ingredient;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import net.minecraft.block.Block;
-import net.minecraft.item.ItemStack;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.ITag;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.tags.ITag;
 
 import java.util.stream.Collectors;
 
 public class BlockTagIngredient implements IIngredient {
-    private final ResourceLocation tagName;
+    private final TagKey<Block> tagName;
     private final int amount;
     private int durabilityCost;
     private boolean fluidContainer;
 
-    public BlockTagIngredient(ResourceLocation tagName, int amount) {
-        this.tagName = tagName;
-        this.amount = amount;
-    }
+//    public BlockTagIngredient(ResourceLocation tagName, int amount) {
+//        this.tagName = tagName;
+//        this.amount = amount;
+//    }
 
-    public BlockTagIngredient(ITag.INamedTag<Block> tag, int amount) {
-        this.tagName = tag.getName();
+    public BlockTagIngredient(TagKey<Block> tag, int amount) {
+        this.tagName = tag;
         this.amount = amount;
     }
 
     @Override
     public ImmutableList<ItemStack> getItemStacks() {
-
-        final ITag<Block> itemITag = BlockTags.getCollection().get(tagName);
+        final ITag<Block> itemITag = ForgeRegistries.BLOCKS.tags().getTag(tagName);
         if (itemITag == null) return ImmutableList.of();
         return itemITag
-                .getAllElements()
                 .stream()
                 .map(i -> new ItemStack(i, 1))
                 .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
@@ -65,7 +64,7 @@ public class BlockTagIngredient implements IIngredient {
 
     @Override
     public IngredientProblem assertValid(String id, String source) {
-        final ITag<Block> itemITag = BlockTags.getCollection().get(tagName);
+        final ITag<Block> itemITag = ForgeRegistries.BLOCKS.tags().getTag(tagName);
         if (itemITag == null) {
             return new IngredientProblem(id, source, "Invalid Item Tag: " + this.tagName.toString());
         }
@@ -81,7 +80,7 @@ public class BlockTagIngredient implements IIngredient {
                 .toString();
     }
 
-    public ResourceLocation getTagName() {
+    public TagKey<Block> getTagName() {
         return tagName;
     }
 }

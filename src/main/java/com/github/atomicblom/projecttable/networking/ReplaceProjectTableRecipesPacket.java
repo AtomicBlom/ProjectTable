@@ -12,18 +12,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.network.play.ClientPlayNetHandler;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.item.crafting.IRecipeType;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Collection;
 import java.util.List;
@@ -49,22 +50,22 @@ public class ReplaceProjectTableRecipesPacket
     }
     public boolean shouldIncludeVanillaRecipes() { return includeVanillaRecipes; }
 
-    public void serialize(PacketBuffer buf)
+    public void serialize(FriendlyByteBuf buf)
     {
         Collection<ProjectTableRecipe> allRecipes = ProjectTableManager.INSTANCE.getRecipes();
         buf.writeInt(allRecipes.size());
         for (ProjectTableRecipe recipe : allRecipes) {
-            recipe.writeToBuffer(new PacketBuffer(buf));
+            recipe.writeToBuffer(new FriendlyByteBuf(buf));
         }
         buf.writeBoolean(ProjectTableConfig.COMMON.loadCraftingTableRecipes.get());
     }
 
-    public static ReplaceProjectTableRecipesPacket deserialize(PacketBuffer buf)
+    public static ReplaceProjectTableRecipesPacket deserialize(FriendlyByteBuf buf)
     {
         List<ProjectTableRecipe> replacementRecipes = Lists.newArrayList();
         int recipeCount = buf.readInt();
         for (int i = 0; i < recipeCount; i++) {
-            replacementRecipes.add(ProjectTableRecipe.readFromBuffer(new PacketBuffer(buf)));
+            replacementRecipes.add(ProjectTableRecipe.readFromBuffer(new FriendlyByteBuf(buf)));
         }
         boolean includeVanillaRecipes = buf.readBoolean();
         return new ReplaceProjectTableRecipesPacket(replacementRecipes, includeVanillaRecipes);
@@ -91,13 +92,13 @@ public class ReplaceProjectTableRecipesPacket
             if (msg.shouldIncludeVanillaRecipes()) {
 
                 final Minecraft instance = Minecraft.getInstance();
-                final ClientPlayerEntity player = instance.player;
-                final ClientPlayNetHandler connection = instance.getConnection();
+                final LocalPlayer player = instance.player;
+                final ClientPacketListener connection = instance.getConnection();
 
                 assert player != null;
                 assert connection != null;
 
-                CraftingInventory tempCraftingInventory = new CraftingInventory(player.container, 3, 3);
+                CraftingContainer tempCraftingInventory = new CraftingContainer(player.containerMenu, 3, 3);
 
                 ProjectTableMod.logger.info("Duplicating mod recipes");
 
@@ -106,28 +107,27 @@ public class ReplaceProjectTableRecipesPacket
                         .getRecipeManager()
                         .getRecipes()
                         .parallelStream()
-                        .filter(r -> !r.isDynamic() && r.getType() == IRecipeType.CRAFTING)
+                        .filter(r -> !r.isSpecial() && r.getType() == RecipeType.CRAFTING)
                         .map(r ->
-                                (IRecipe<CraftingInventory>)r
+                                (Recipe<CraftingContainer>)r
                         )
                         .map(r -> {
                             try {
                                 final Stream<ItemStack> returnedItems = Stream.concat(
-                                        Stream.of(r.getRecipeOutput()),
+                                        Stream.of(r.getResultItem()),
                                         r.getRemainingItems(tempCraftingInventory).stream()
                                 );
-                                final Stream<Ingredient> ingredients = r.getIngredients()
-                                        .stream();
+                                final Stream<Ingredient> ingredients = r.getIngredients().stream();
                                 return new ProjectTableRecipe(
                                         r.getId().toString(),
                                         "CRAFTING_TABLE",
                                         returnedItems
                                                 .filter(i -> !i.isEmpty())
                                                 .collect(Collectors.toList()),
-                                        r.getRecipeOutput().getDisplayName(),
+                                        r.getResultItem().getHoverName(),
                                         ingredients
                                                 .filter(Ingredient::isSimple)
-                                                .map(Ingredient::serialize)
+                                                .map(Ingredient::toJson)
                                                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                                                 .entrySet().stream()
                                                 .map(i -> ReplaceProjectTableRecipesPacket.toProjectTableIngredient(i.getKey(), i.getValue().intValue()))
@@ -178,12 +178,12 @@ public class ReplaceProjectTableRecipesPacket
         final JsonObject serialize = serializedIngredient.getAsJsonObject();
         if (serialize.has("item")) {
             @SuppressWarnings("deprecation")
-            Item item = Registry.ITEM.getOrDefault(new ResourceLocation(serialize.get("item").getAsString()));
+            Item item = Registry.ITEM.get(new ResourceLocation(serialize.get("item").getAsString()));
             final ItemStack itemStack = new ItemStack(item, count);
             if (itemStack.isEmpty()) return null;
             return new ItemStackIngredient(itemStack);
         } else if (serialize.has("tag")) {
-            return new ItemTagIngredient(new ResourceLocation(serialize.get("tag").getAsString()), count);
+            return new ItemTagIngredient(ForgeRegistries.ITEMS.tags().createTagKey(new ResourceLocation(serialize.get("tag").getAsString())), count);
         }
 
         return null;

@@ -1,7 +1,6 @@
 package com.github.atomicblom.projecttable.util;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.jline.utils.Log;
 
 import javax.annotation.Nonnull;

@@ -1,7 +1,7 @@
 package com.github.atomicblom.projecttable.api;
 
 import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.fml.event.lifecycle.IModBusEvent;
+import net.minecraftforge.fml.event.IModBusEvent;
 
 /**
  * This event is fired during PostInit on the MinecraftForge.EVENT_BUS to notify dependant mods that SteamNSteel's
