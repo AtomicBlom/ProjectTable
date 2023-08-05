@@ -15,7 +15,9 @@ import com.google.common.collect.Lists;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.StartupMessageManager;
@@ -80,7 +82,7 @@ public class ProjectTableMod
     }
 
     private void onLoadComplete(final FMLLoadCompleteEvent event) {
-        MenuScreens.register(ContainerTypeLibrary.projectTableContainer.get(), ProjectTableGui::new);
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ClientFinalConfiguration::clientLoadComplete);
     }
 
     public void onEnqueueIMCEvent(InterModEnqueueEvent event) {
@@ -122,6 +124,12 @@ public class ProjectTableMod
 
         } finally {
             StartupMessageManager.addModMessage("Completed Project Table Recipes");
+        }
+    }
+
+    class ClientFinalConfiguration {
+        static void clientLoadComplete() {
+            MenuScreens.register(ContainerTypeLibrary.projectTableContainer.get(), ProjectTableGui::new);
         }
     }
 }
