@@ -3,6 +3,7 @@ package com.github.atomicblom.projecttable;
 import com.github.atomicblom.projecttable.api.ProjectTableInitializedEvent;
 import com.github.atomicblom.projecttable.api.ingredient.IngredientProblem;
 import com.github.atomicblom.projecttable.client.ProjectTableGui;
+import com.github.atomicblom.projecttable.client.ProjectTableVanillaGui;
 import com.github.atomicblom.projecttable.client.api.InvalidRecipeException;
 import com.github.atomicblom.projecttable.crafting.CraftingManager;
 import com.github.atomicblom.projecttable.library.BlockLibrary;
@@ -129,7 +130,8 @@ public class ProjectTableMod
 
     class ClientFinalConfiguration {
         static void clientLoadComplete() {
-            MenuScreens.register(ContainerTypeLibrary.projectTableContainer.get(), ProjectTableGui::new);
+            //MenuScreens.register(ContainerTypeLibrary.projectTableContainer.get(), ProjectTableGui::new);
+            MenuScreens.register(ContainerTypeLibrary.projectTableContainer.get(), ProjectTableVanillaGui::new);
         }
     }
 }
