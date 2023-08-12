@@ -19,7 +19,7 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import org.lwjgl.system.MathUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
@@ -34,7 +34,7 @@ public class ProjectTableVanillaGui extends AbstractContainerScreen<ProjectTable
     private static final Component showOnlyCraftableComponentText = MutableComponent.create(new TranslatableContents("gui.projecttable:project_table.show_only_craftable"));
     private static final ResourceLocation GUI_TEXTURE = new ResourceLocation(ProjectTableMod.MODID.toLowerCase(), "textures/gui/sscraftingtablegui.png");
 
-    private static final int CRAFT_BUTTON_HEIGHT = 20;
+    private static final int CRAFT_BUTTON_HEIGHT = 23;
     private static final int CRAFT_BUTTON_COUNT = 5;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -81,7 +81,7 @@ public class ProjectTableVanillaGui extends AbstractContainerScreen<ProjectTable
         this.addRenderableWidget(showOnlyCraftableCheckbox);
 
         for (int i = 0; i < CRAFT_BUTTON_COUNT; i++ ){
-            buttons[i] = new CraftButton(i,0, i * CRAFT_BUTTON_HEIGHT, 284, CRAFT_BUTTON_HEIGHT, playerInventoryTitle, this::craftButtonPressed);
+            buttons[i] = new CraftButton(i, 0, 23 + i * CRAFT_BUTTON_HEIGHT, 284, CRAFT_BUTTON_HEIGHT, playerInventoryTitle, this::craftButtonPressed);
         }
 
         executor.submit(this::createRecipeList);
@@ -117,6 +117,7 @@ public class ProjectTableVanillaGui extends AbstractContainerScreen<ProjectTable
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GUI_TEXTURE);
+        if (filteredList.isEmpty()) return;
 
         var maximumOffset = filteredList.size() * CRAFT_BUTTON_HEIGHT;
         if (_offset >= (maximumOffset - (CRAFT_BUTTON_COUNT * CRAFT_BUTTON_HEIGHT))) {
@@ -233,7 +234,7 @@ public class ProjectTableVanillaGui extends AbstractContainerScreen<ProjectTable
                 (searchText.isEmpty() || f.getRecipeName().toLowerCase().contains(searchText));
     }
 
-    private class CraftButton extends Button {
+    private static class CraftButton extends Button {
 
         private final int index;
 
@@ -244,6 +245,23 @@ public class ProjectTableVanillaGui extends AbstractContainerScreen<ProjectTable
 
         public int getIndex() {
             return index;
+        }
+
+        @Override
+        public void renderButton(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, GUI_TEXTURE);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, this.alpha);
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.enableDepthTest();
+
+            int i = this.getYImage(this.isHoveredOrFocused());
+            blit(poseStack, x, y, this.getBlitOffset(), 0, 204 + i * CRAFT_BUTTON_HEIGHT, 284, CRAFT_BUTTON_HEIGHT, 384, 384);
+
+            if (this.isHoveredOrFocused()) {
+                this.renderToolTip(poseStack, mouseX, mouseY);
+            }
         }
     }
 }
